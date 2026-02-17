@@ -71,7 +71,3 @@ services:
       - ./custom-templates:/templates
     networks:
       - database
-
-volumes:
-  database:
-    driver: local

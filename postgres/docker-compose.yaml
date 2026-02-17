@@ -24,3 +24,7 @@ services:
       - ./entrypoint.sh:/docker-entrypoint-initdb.d/entrypoint.sh
     networks:
       - database
+
+volumes:
+  database:
+    driver: local
