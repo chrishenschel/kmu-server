@@ -1,0 +1,18 @@
+networks:
+  caddy-proxy:
+    external: true
+
+services:
+  caddy:
+    image: caddy
+    container_name: caddy-proxy
+    restart: unless-stopped
+    ports:
+      - 80:80
+      - 443:443
+    volumes:
+      - ./data:/data
+      - ./config:/config
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+    networks:
+      - caddy-proxy

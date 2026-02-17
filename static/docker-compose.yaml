@@ -1,0 +1,16 @@
+networks:
+  caddy-proxy:
+    external: true
+
+### SERVICE ###
+services:
+  homepage:
+    container_name: homepage
+    image: nginx:latest
+    restart: unless-stopped
+    networks:
+      - caddy-proxy
+    security_opt:
+      - no-new-privileges:true
+    volumes:
+      - ./html:/usr/share/nginx/html:ro

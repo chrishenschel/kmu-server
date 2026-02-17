@@ -1,0 +1,8 @@
+{
+    acme_ca https://acme-v02.api.letsencrypt.org/directory
+    email   hostmaster@henschels.net
+}
+
+www.tudels.com tudels.com {
+    reverse_proxy homepage:80
+}
