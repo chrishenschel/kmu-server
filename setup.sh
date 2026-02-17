@@ -44,7 +44,7 @@ apt update && apt upgrade -y
 
 # --- Install Essentials ---
 log "Installing essential packages..."
-apt install -y ca-certificates curl git ufw software-properties-common
+apt install -y ca-certificates curl git ufw software-properties-common yq
 
 # --- Install Docker (Idempotent) ---
 if ! command -v docker &> /dev/null; then
