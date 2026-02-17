@@ -7,9 +7,9 @@ services:
       - 80:80
       - 443:443
     volumes:
-      - caddy/data:/data
-      - caddy/config:/config
-      - caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./caddy/data:/data
+      - ./caddy/config:/config
+      - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
     networks:
       - caddy-proxy
   postgres:
@@ -30,7 +30,7 @@ services:
       retries: 5
     volumes:
       - database:/var/lib/postgresql/data
-      - postgres/entrypoint.sh:/docker-entrypoint-initdb.d/entrypoint.sh
+      - ./postgres/entrypoint.sh:/docker-entrypoint-initdb.d/entrypoint.sh
     networks:
       - database
   authentikserver:
@@ -53,8 +53,8 @@ services:
     #   - ${COMPOSE_PORT_HTTPS:-9443}:9443
     restart: unless-stopped
     volumes:
-      - authentik/data:/data
-      - authentik/custom-templates:/templates
+      - ./authentik/data:/data
+      - ./authentik/custom-templates:/templates
     networks:
       - caddy-proxy
       - database
@@ -77,9 +77,9 @@ services:
     user: root
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-      - authentik/data:/data
-      - authentik/certs:/certs
-      - authentik/custom-templates:/templates
+      - ./authentik/data:/data
+      - ./authentik/certs:/certs
+      - ./authentik/custom-templates:/templates
     networks:
       - database
 
@@ -93,7 +93,7 @@ services:
     security_opt:
       - no-new-privileges:true
     volumes:
-      - static/html:/usr/share/nginx/html:ro
+      - ./static/html:/usr/share/nginx/html:ro
 
 volumes:
   database:
