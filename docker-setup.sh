@@ -16,13 +16,14 @@ docker run -it --rm \
 cp /var/lib/docker/volumes/infra_synapse_data/_data/tudels.com.log.config ./synapse/data/tudels.com.log.config
 cp /var/lib/docker/volumes/infra_synapse_data/_data/tudels.com.signing.key ./synapse/data/tudels.com.signing.key
 cp /var/lib/docker/volumes/infra_synapse_data/_data/homeserver.yaml ./synapse/data/homeserver.yaml
+chmod a+r ./synapse/data/tudels.com.signing.key
 
 yq -iy --arg pass "$PG_PASS" '
   .database.name = "psycopg2" |
-  .database.host = "postgres-server" |
+  .database.host = "postgres" |
   .database.user = "postgres" |
   .database.password = $pass |
-  .database.db_name = "synapse" |
+  .database.db_name = "matrix" |
   .database.port = 5432 |
   .database.cp_min = 5 |
   .database.cp_max = 10 |
