@@ -89,7 +89,7 @@ services:
 
   ## Synapse
   synapse:
-    image: matrixdotorg/synapse:latest
+    image: ghcr.io/element-hq/synapse:latest
     container_name: synapse
     env_file:
       - .env
