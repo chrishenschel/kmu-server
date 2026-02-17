@@ -26,9 +26,9 @@ services:
   #   - database:/var/lib/postgresql/data
   server:
     command: server
-    depends_on:
-      postgresql:
-        condition: service_healthy
+    # depends_on:
+    #   postgresql:
+    #     condition: service_healthy
     env_file:
       - .env
     environment:
@@ -50,9 +50,9 @@ services:
       - database
   worker:
     command: worker
-    depends_on:
-      postgresql:
-        condition: service_healthy
+    # depends_on:
+    #   postgresql:
+    #     condition: service_healthy
     env_file:
       - .env
     environment:
