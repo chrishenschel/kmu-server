@@ -15,7 +15,9 @@ services:
   postgres:
     env_file:
       - .env
-    image: postgres:alpine
+    # image: postgres:alpine
+    context: ./postgres
+    dockerfile: Dockerfile
     container_name: postgres-server
     restart: unless-stopped
     # ports:
