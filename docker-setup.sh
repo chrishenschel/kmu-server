@@ -11,22 +11,22 @@ echo "AUTHENTIK_SECRET_KEY=$(openssl rand -base64 60 | tr -d '\n')" >> .env
 docker run -it --rm \
     --mount type=volume,src=infra_synapse_data,dst=/data \
     -e SYNAPSE_SERVER_NAME=tudels.com \
-    -e SYNAPSE_REPORT_STATS=no matrixdotorg/synapse:latest generate
+    -e SYNAPSE_REPORT_STATS=no ghcr.io/element-hq/synapse:latest generate
 
 cp /var/lib/docker/volumes/infra_synapse_data/_data/tudels.com.log.config ./synapse/data/tudels.com.log.config
 cp /var/lib/docker/volumes/infra_synapse_data/_data/tudels.com.signing.key ./synapse/data/tudels.com.signing.key
 cp /var/lib/docker/volumes/infra_synapse_data/_data/homeserver.yaml ./synapse/data/homeserver.yaml
-chmod a+r ./synapse/data/tudels.com.signing.key
+chown 991:991 ./synapse/data/tudels.com.signing.key
 
 yq -iy --arg pass "$PG_PASS" '
   .database.name = "psycopg2" |
-  .database.host = "postgres" |
-  .database.user = "postgres" |
-  .database.password = $pass |
-  .database.db_name = "matrix" |
-  .database.port = 5432 |
-  .database.cp_min = 5 |
-  .database.cp_max = 10 |
+  .database.args.host = "postgres" |
+  .database.args.user = "postgres" |
+  .database.args.password = $pass |
+  .database.args.database = "matrix" |
+  .database.args.port = 5432 |
+  .database.args.cp_min = 5 |
+  .database.args.cp_max = 10 |
   .media_store_path = "/data/media_store" |
   .max_upload_size = "50M" |
   .enable_registration = false |
