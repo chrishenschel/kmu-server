@@ -18,3 +18,7 @@ mail.tudels.com {
 matrix.tudels.com {
     reverse_proxy synapse:8008
 }
+
+element.tudels.com {
+    reverse_proxy element:80
+}

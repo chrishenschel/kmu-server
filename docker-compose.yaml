@@ -87,7 +87,7 @@ services:
     networks:
       - database
 
-  ## Synapse
+  ## Synapse / Element / MATRIX
   synapse:
     image: ghcr.io/element-hq/synapse:latest
     container_name: synapse
@@ -111,6 +111,14 @@ services:
       - caddy-proxy
       - database
     restart: unless-stopped
+
+  element:
+    image: vectorim/element-web:latest
+    restart: unless-stopped
+    volumes:
+      - ./element/config.json:/app/config.json
+    networks:
+      - caddy-proxy
 
   ## Mailserver
   stalwart:
