@@ -10,3 +10,11 @@ www.tudels.com tudels.com {
 auth.tudels.com {
     reverse_proxy authentik-server:9000
 }
+
+mail.tudels.com {
+    reverse_proxy stalwart-mail:8080
+}
+
+matrix.tudels.com {
+    reverse_proxy synapse:8008
+}

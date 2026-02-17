@@ -1,0 +1,67 @@
+# synapse-data/homeserver.yaml - Key settings (edit the generated file)
+
+# Server name - this appears in user IDs (@user:yourdomain.com)
+server_name: "tudels.com"
+
+# Listener configuration
+listeners:
+  - port: 8008
+    tls: false
+    type: http
+    x_forwarded: true
+    resources:
+      - names: [client, federation]
+        compress: false
+
+# Switch from SQLite to PostgreSQL
+database:
+  name: psycopg2
+  args:
+    user: postgres
+    password: ${PG_PASS}
+    database: matrix
+    host: postgres-server
+    port: 5432
+    cp_min: 5
+    cp_max: 10
+
+# Logging configuration
+log_config: "/data/tudels.com.log.config"
+
+# Media storage
+media_store_path: /data/media_store
+max_upload_size: 50M
+
+# Registration settings
+enable_registration: false
+enable_registration_without_verification: false
+
+# For initial setup, you may want to temporarily enable registration
+# enable_registration: true
+
+# Rate limiting
+rc_message:
+  per_second: 0.2
+  burst_count: 10
+
+rc_registration:
+  per_second: 0.17
+  burst_count: 3
+
+# Retention policy
+retention:
+  enabled: true
+  default_policy:
+    min_lifetime: 1d
+    max_lifetime: 365d
+
+# URL preview configuration
+url_preview_enabled: true
+url_preview_ip_range_blacklist:
+  - '127.0.0.0/8'
+  - '10.0.0.0/8'
+  - '172.16.0.0/12'
+  - '192.168.0.0/16'
+
+# Report stats to matrix.org (optional)
+report_stats: false

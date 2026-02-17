@@ -83,6 +83,47 @@ services:
     networks:
       - database
 
+  ## Synapse
+  synapse:
+    image: matrixdotorg/synapse:latest
+    container_name: synapse
+    env_file:
+      - .env
+    volumes:
+      - ./synapse/data:/data
+    environment:
+      SYNAPSE_CONFIG_DIR: /data
+      SYNAPSE_CONFIG_PATH: /data/homeserver.yaml
+      TZ: "Europe/Berlin"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      # Client-Server API
+      #- "8008:8008"
+      # Federation API
+      #- "8448:8448"
+    networks:
+      - caddy-proxy
+      - database
+    restart: unless-stopped
+
+  ## Mailserver
+  stalwart:
+    image: stalwartlabs/stalwart:latest
+    container_name: stalwart-mail
+    restart: unless-stopped
+    volumes:
+      - ./stalwart/data:/opt/stalwart
+    ports:
+      - "25:25" # SMTP
+      - "465:465" # SMTPS (SMTP über SSL/TLS)
+      - "993:993" # IMAPS (IMAP über SSL/TLS)
+      #- "8080:8080" # Stalwart Web-Admin-Oberfläche (HTTP)
+      #- "443:443"   # HTTPS für Web-Admin-Oberfläche
+    networks:
+      - caddy-proxy
+
   ## Static hosting
   homepage:
     container_name: homepage
