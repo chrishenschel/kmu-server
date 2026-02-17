@@ -1,0 +1,106 @@
+services:
+  caddy:
+    image: caddy
+    container_name: caddy-proxy
+    restart: unless-stopped
+    ports:
+      - 80:80
+      - 443:443
+    volumes:
+      - caddy/data:/data
+      - caddy/config:/config
+      - caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+    networks:
+      - caddy-proxy
+  postgres:
+    env_file:
+      - .env
+    image: postgres:alpine
+    container_name: postgres-server
+    restart: unless-stopped
+    ports:
+      - 5432:5432
+    environment:
+      POSTGRES_PASSWORD: "${PG_PASS}"
+      POSTGRES_MULTIPLE_DATABASES: authentik
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - database:/var/lib/postgresql/data
+      - postgres/entrypoint.sh:/docker-entrypoint-initdb.d/entrypoint.sh
+    networks:
+      - database
+  authentikserver:
+    command: server
+    container_name: authentik-server
+    depends_on:
+      postgres:
+        condition: service_healthy
+    env_file:
+      - .env
+    environment:
+      AUTHENTIK_POSTGRESQL__HOST: postgres-server
+      AUTHENTIK_POSTGRESQL__NAME: authentik
+      AUTHENTIK_POSTGRESQL__PASSWORD: "${PG_PASS}"
+      AUTHENTIK_POSTGRESQL__USER: postgres
+      AUTHENTIK_SECRET_KEY: ${AUTHENTIK_SECRET_KEY:?secret key required}
+    image: ghcr.io/goauthentik/server:2025.12.4
+    # ports:
+    #   - ${COMPOSE_PORT_HTTP:-9000}:9000
+    #   - ${COMPOSE_PORT_HTTPS:-9443}:9443
+    restart: unless-stopped
+    volumes:
+      - authentik/data:/data
+      - authentik/custom-templates:/templates
+    networks:
+      - caddy-proxy
+      - database
+  worker:
+    container_name: authentik-worker
+    command: worker
+    depends_on:
+      postgres:
+        condition: service_healthy
+    env_file:
+      - .env
+    environment:
+      AUTHENTIK_POSTGRESQL__HOST: postgres-server
+      AUTHENTIK_POSTGRESQL__NAME: authentik
+      AUTHENTIK_POSTGRESQL__PASSWORD: "${PG_PASS}"
+      AUTHENTIK_POSTGRESQL__USER: postgres
+      AUTHENTIK_SECRET_KEY: ${AUTHENTIK_SECRET_KEY:?secret key required}
+    image: ghcr.io/goauthentik/server:2025.12.4
+    restart: unless-stopped
+    user: root
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - authentik/data:/data
+      - authentik/certs:/certs
+      - authentik/custom-templates:/templates
+    networks:
+      - database
+
+  ## Static hosting
+  homepage:
+    container_name: homepage
+    image: nginx:latest
+    restart: unless-stopped
+    networks:
+      - caddy-proxy
+    security_opt:
+      - no-new-privileges:true
+    volumes:
+      - static/html:/usr/share/nginx/html:ro
+
+volumes:
+  database:
+    driver: local
+
+networks:
+  caddy-proxy:
+    external: true
+  database:
+    external: true

@@ -6,3 +6,7 @@
 www.tudels.com tudels.com {
     reverse_proxy homepage:80
 }
+
+auth.tudels.com {
+    reverse_proxy authentik-server:9000
+}
