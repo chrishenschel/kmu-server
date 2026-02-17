@@ -20,13 +20,14 @@ chown 991:991 ./synapse/data/tudels.com.signing.key
 
 yq -iy --arg pass "$PG_PASS" '
   .database.name = "psycopg2" |
+  .database.allow_unsafe_locale = true |  
   .database.args.host = "postgres" |
   .database.args.user = "postgres" |
   .database.args.password = $pass |
   .database.args.database = "matrix" |
   .database.args.port = 5432 |
   .database.args.cp_min = 5 |
-  .database.args.cp_max = 10 |
+  .database.args.cp_max = 10 |  
   .media_store_path = "/data/media_store" |
   .max_upload_size = "50M" |
   .enable_registration = false |
