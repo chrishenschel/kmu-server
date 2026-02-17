@@ -1,2 +1,4 @@
-docker-compose up -f caddy/docker-compose.yaml -d
-docker-compose up -f static/docker-compose.yaml -d
+docker compose -f caddy/docker-compose.yaml up -d
+docker compose -f static/docker-compose.yaml up -d
+docker compose -f postgres/docker-compose.yaml up -d
+docker compose -f authentik/docker-compose.yaml up -d
