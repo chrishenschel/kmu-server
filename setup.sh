@@ -1,3 +1,5 @@
+## DOCKER SETUP
+
 sudo apt remove $(dpkg --get-selections docker.io docker-compose docker-compose-v2 docker-doc podman-docker containerd runc | cut -f1)
 # Add Docker's official GPG key:
 sudo apt update
@@ -17,3 +19,8 @@ EOF
 
 sudo apt update
 sudo apt install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+
+
+## Downloading the github repo
+sudo apt install git
+git clone https://github.com/chenschel/kmu-server.git
