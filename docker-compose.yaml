@@ -38,6 +38,7 @@ services:
     networks:
       - database
   authentikserver:
+    image: ghcr.io/goauthentik/server:2025.12.4
     command: server
     container_name: authentik-server
     depends_on:
@@ -55,7 +56,6 @@ services:
       AUTHENTIK_BOOTSTRAP_PASSWORD: ${AUTHENTIK_BOOTSTRAP_PASSWORD:?password required}
       AUTHENTIK_BOOTSTRAP_TOKEN: ${AUTHENTIK_BOOTSTRAP_TOKEN:?token required}
       AUTHENTIK_BOOTSTRAP_EMAIL: ${AUTHENTIK_BOOTSTRAP_EMAIL:?email required}
-    image: ghcr.io/goauthentik/server:2025.12.4
     # ports:
     #   - ${COMPOSE_PORT_HTTP:-9000}:9000
     #   - ${COMPOSE_PORT_HTTPS:-9443}:9443
@@ -68,6 +68,7 @@ services:
       - caddy-proxy
       - database
   worker:
+    image: ghcr.io/goauthentik/server:2025.12.4
     container_name: authentik-worker
     command: worker
     depends_on:
@@ -85,7 +86,6 @@ services:
       AUTHENTIK_BOOTSTRAP_PASSWORD: ${AUTHENTIK_BOOTSTRAP_PASSWORD:?password required}
       AUTHENTIK_BOOTSTRAP_TOKEN: ${AUTHENTIK_BOOTSTRAP_TOKEN:?token required}
       AUTHENTIK_BOOTSTRAP_EMAIL: ${AUTHENTIK_BOOTSTRAP_EMAIL:?email required}
-    image: ghcr.io/goauthentik/server:2025.12.4
     restart: unless-stopped
     user: root
     volumes:

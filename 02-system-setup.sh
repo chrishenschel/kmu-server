@@ -42,7 +42,13 @@ echo "USERNAME=$username" >> .env
 echo "USERFULLNAME=$userfullname" >> .env
 echo "PASSWORD=$password" >> .env
 
-PASSWORD_HASH=$(docker run --rm ghcr.io/goauthentik/server:latest python -c "from django.contrib.auth.hashers import make_password; print(make_password('$password'))")
+PASSWORD_HASH=$(docker run --rm -e PWD="$password" ghcr.io/goauthentik/server:2024.12.0 python -c "
+import os
+from django.conf import settings
+settings.configure()
+from django.contrib.auth.hashers import make_password
+print(make_password(os.environ['PWD']))
+")
 echo "PASSWORD_HASH=$PASSWORD_HASH" >> .env
 
 docker network create caddy-proxy
@@ -121,7 +127,9 @@ yq -iy \
   --arg id "$MATRIX_CLIENT_ID" \
   --arg secret "$MATRIX_CLIENT_SECRET" \
   --arg domain "$MATRIX_DOMAIN" \
+  --arg domain "$domain" \
   '
+  .metadata.name = $domain+" Matrix Synapse Integration" |  
   .entries[0].attrs.client_id = $id |
   .entries[0].attrs.client_secret = $secret |
   .entries[0].attrs.redirect_uris[0] |= sub("PLACEHOLDER_DOMAIN"; $domain)
