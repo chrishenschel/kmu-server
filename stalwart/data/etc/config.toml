@@ -39,15 +39,27 @@ bind = "[::]:443"
 tls.implicit = true
 
 [server.listener.http]
+bind = [ "0.0.0.0:8080" ]
 protocol = "http"
-bind = "[::]:8080"
+url = "https://mail.__DOMAIN__"
+use-proxy-headers = true
 
 [storage]
-data = "rocksdb"
-fts = "rocksdb"
-blob = "rocksdb"
-lookup = "rocksdb"
-directory = "internal"
+data = "postgres"      # Store metadata (folders, flags, tags) in SQL
+directory = "postgres" # Store user accounts in SQL
+blob = "fs"            # Store actual email bodies as files on disk
+fts = "rocksdb"        # Keep Search Index in RocksDB (it is fast and disposable)
+lookup = "rocksdb"     # Keep temporary lookups fast in RocksDB
+
+# Define the Postgres connection
+[store."postgres"]
+type = "sql"
+url = "postgres://postgres:__PG_PASS__@postgres:5432/stalwart"
+
+# Define the File System connection for Blobs
+[store."fs"]
+type = "fs"
+path = "/opt/stalwart-mail/data/blobs" # This path is inside the container
 
 [store.rocksdb]
 type = "rocksdb"
@@ -67,12 +79,17 @@ rotate = "daily"
 ansi = false
 enable = true
 
+[session]
+# Add "oidc" to the list. "plain" is kept for standard IMAP/SMTP clients.
+auth-mechanisms = ["plain", "oidc"]
+
 [directory."authentik"]
 type = "oidc"
 timeout = "15s"
 client-id = "__CLIENT_ID__"
 client-secret = "__CLIENT_SECRET__"
 issuer-url = "https://auth.__DOMAIN__/application/o/stalwart-mail/"
+create-not-found = true
 
 [directory."authentik".fields]
 username = "preferred_username"

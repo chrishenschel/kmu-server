@@ -215,7 +215,18 @@ sed -i \
     "./authentik/blueprints/stalwart.yaml"
 
 sed -i \
+    -e "s|__PG_PASS__|$PG_PASS|g" \
     -e "s|__CLIENT_ID__|$STALWART_CLIENT_ID|g" \
     -e "s|__CLIENT_SECRET__|$STALWART_CLIENT_SECRET|g" \
     -e "s|__DOMAIN__|$domain|g" \
     "./stalwart/data/etc/config.toml"
+
+# dozzle blueprint update
+sed -i \
+    -e "s|__DOMAIN__|$domain|g" \
+    "./authentik/blueprints/dozzle.yaml"
+
+
+### maybe later?
+# Promote your OIDC user to superuser
+#./stalwart-cli acl add superuser chris@tudels.com

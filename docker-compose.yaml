@@ -26,7 +26,7 @@ services:
     environment:
       POSTGRES_PASSWORD: "${PG_PASS}"
       POSTGRES_USER: postgres
-      POSTGRES_MULTIPLE_DATABASES: authentik,matrix
+      POSTGRES_MULTIPLE_DATABASES: authentik,matrix,stalwart
     healthcheck:
       test: [ "CMD-SHELL", "pg_isready -U postgres" ]
       interval: 5s
@@ -37,6 +37,30 @@ services:
       - ./postgres/init-multiple-databases.sh:/docker-entrypoint-initdb.d/init-multiple-databases.s
     networks:
       - database
+  postgres-backup:
+    image: prodrigestivill/postgres-backup-local
+    restart: always
+    volumes:
+      - ./backups/postgres:/backups
+    depends_on:
+      - postgres
+    environment:
+      - POSTGRES_HOST=postgres
+      - POSTGRES_DB=postgres
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD="${PG_PASS}"
+      - SCHEDULE=@daily
+      - BACKUP_KEEP_DAYS=7
+      - BACKUP_KEEP_WEEKS=4
+      - BACKUP_KEEP_MONTHS=6
+  dozzle:
+    container_name: dozzle
+    image: amir20/dozzle:latest
+    restart: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    environment:
+      - DOZZLE_FILTER=name=^dozzle$
   authentikserver:
     image: ghcr.io/goauthentik/server:2025.12.4
     command: server

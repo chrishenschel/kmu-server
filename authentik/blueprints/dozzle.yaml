@@ -1,0 +1,30 @@
+version: 1
+metadata:
+  name: __DOMAIN__ Dozzle Logs
+  labels:
+    type: custom
+entries:
+  # 1. Proxy Provider (Forward Auth)
+  - model: authentik_providers_proxy.proxyprovider
+    id: dozzle-provider
+    identifiers:
+      name: Dozzle Proxy
+    attrs:
+      # "Forward Auth" mode means Caddy handles the traffic, Authentik just says Yes/No
+      mode: forward_single
+      external_host: https://logs.__DOMAIN__
+      authorization_flow: !Find [authentik_flows.flow, [slug, "default-provider-authorization-implicit-consent"]]
+      invalidation_flow: !Find [authentik_flows.flow, [slug, "default-provider-invalidation-flow"]]
+    state: present
+
+  # 2. Application
+  - model: authentik_core.application
+    id: dozzle-app
+    identifiers:
+      slug: dozzle-logs
+    attrs:
+      name: System Logs
+      slug: dozzle-logs
+      provider: !KeyOf dozzle-provider
+      policy_engine_mode: any
+    state: present
