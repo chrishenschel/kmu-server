@@ -12,5 +12,6 @@ entries:
       email: __EMAIL__
       # This flag makes them an admin
       is_superuser: true
+      is_staff: true
       password: __PASSWORD_HASH__
     state: present
