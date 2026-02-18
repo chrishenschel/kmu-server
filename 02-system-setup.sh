@@ -43,13 +43,17 @@ echo "USERNAME=$username" >> .env
 echo "USERFULLNAME=$userfullname" >> .env
 echo "PASSWORD=$password" >> .env
 
-PASSWORD_HASH=$(docker run --rm -e AUTHENTIK_SECRET_KEY="$AUTHENTIK_SECRET_KEY" -e PWD="$password" ghcr.io/goauthentik/server:2024.12.0 python -c "
-import os
-from django.conf import settings
-settings.configure()
-from django.contrib.auth.hashers import make_password
-print(make_password(os.environ['PWD']))
-")
+PASSWORD_HASH=$(python3 -c '
+import hashlib, base64, secrets, sys
+password = sys.argv[1]
+salt = secrets.token_urlsafe(12)
+iterations = 600000
+dk = hashlib.pbkdf2_hmac("sha256", password.encode("utf-8"), salt.encode("utf-8"), iterations)
+b64_hash = base64.b64encode(dk).decode("ascii").strip()
+print(f"pbkdf2_sha256${iterations}${salt}${b64_hash}")
+' "$password")
+
+
 echo "PASSWORD_HASH=$PASSWORD_HASH" >> .env
 
 docker network create caddy-proxy
