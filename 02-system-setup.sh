@@ -29,11 +29,12 @@ PG_PASS="$(openssl rand -base64 36 | tr -d '\n')"
 AUTHENTIK_BOOTSTRAP_PASSWORD="$(openssl rand -base64 60 | tr -d '\n')"
 AUTHENTIK_BOOTSTRAP_TOKEN="$(openssl rand -base64 60 | tr -d '\n')"
 AUTHENTIK_BOOTSTRAP_EMAIL="hostmaster@$domain"
+AUTHENTIK_SECRET_KEY=$(openssl rand -base64 60 | tr -d '\n')
 
 
 # Generate environment variables
 echo "PG_PASS=$PG_PASS" >> .env
-echo "AUTHENTIK_SECRET_KEY=$(openssl rand -base64 60 | tr -d '\n')" >> .env
+echo "AUTHENTIK_SECRET_KEY=$AUTHENTIK_SECRET_KEY" >> .env
 echo "AUTHENTIK_BOOTSTRAP_PASSWORD=$AUTHENTIK_BOOTSTRAP_PASSWORD" >> .env
 echo "AUTHENTIK_BOOTSTRAP_TOKEN=$AUTHENTIK_BOOTSTRAP_TOKEN" >> .env
 echo "AUTHENTIK_BOOTSTRAP_EMAIL=$AUTHENTIK_BOOTSTRAP_EMAIL" >> .env
@@ -42,7 +43,7 @@ echo "USERNAME=$username" >> .env
 echo "USERFULLNAME=$userfullname" >> .env
 echo "PASSWORD=$password" >> .env
 
-PASSWORD_HASH=$(docker run --rm -e PWD="$password" ghcr.io/goauthentik/server:2024.12.0 python -c "
+PASSWORD_HASH=$(docker run --rm -e AUTHENTIK_SECRET_KEY="$AUTHENTIK_SECRET_KEY" -e PWD="$password" ghcr.io/goauthentik/server:2024.12.0 python -c "
 import os
 from django.conf import settings
 settings.configure()
