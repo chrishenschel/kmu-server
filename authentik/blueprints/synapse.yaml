@@ -1,6 +1,6 @@
 version: 1
 metadata:
-  name: Matrix Synapse Integration
+  name: __DOMAIN__ Synapse Integration
   labels:
     type: custom
 entries:
@@ -10,10 +10,10 @@ entries:
     identifiers:
       name: Synapse Provider
     attrs:
-      client_id: PLACEHOLDER_CLIENT_ID
-      client_secret: PLACEHOLDER_CLIENT_SECRET
+      client_id: __CLIENT_ID__
+      client_secret: __CLIENT_SECRET__
       redirect_uris:
-        - https://PLACEHOLDER_DOMAIN/_synapse/client/oidc/callback
+        - https://__MATRIX_DOMAIN__/_synapse/client/oidc/callback
       token_validity: hours=1
       property_mappings:
         - !Find [authentik_providers_oauth2.scopemapping, [scope_name, "email"]]

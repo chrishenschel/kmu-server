@@ -70,19 +70,28 @@ cp /var/lib/docker/volumes/infra_synapse_data/_data/$domain.signing.key ./synaps
 cp /var/lib/docker/volumes/infra_synapse_data/_data/homeserver.yaml ./synapse/data/homeserver.yaml
 chown 991:991 ./synapse/data/$domain.signing.key
 
-yq -iy \
-  --arg user "$username" \
-  --arg name "$userfullname" \
-  --arg email "$email" \
-  --arg pwd "$PASSWORD_HASH" \
-  --arg domain "$domain" \
-  '
-  .metadata.name = $domain+" Initial User Creation" |
-  .entries[0].identifiers.username = $user |
-  .entries[0].attrs.name = $name |
-  .entries[0].attrs.email = $email |
-  .entries[0].attrs.password = $pwd
-  ' ./authentik/blueprints/admin-user.yaml
+# yq -iy \
+#   --arg user "$username" \
+#   --arg name "$userfullname" \
+#   --arg email "$email" \
+#   --arg pwd "$PASSWORD_HASH" \
+#   --arg domain "$domain" \
+#   '
+#   .metadata.name = $domain+" Initial User Creation" |
+#   .entries[0].identifiers.username = $user |
+#   .entries[0].attrs.name = $name |
+#   .entries[0].attrs.email = $email |
+#   .entries[0].attrs.password = $pwd
+#   ' ./authentik/blueprints/admin-user.yaml
+
+sed -i \
+    -e "s|__DOMAIN__|$domain|g" \
+    -e "s|__USER__|$username|g" \
+    -e "s|__NAME__|$userfullname|g" \
+    -e "s|__EMAIL__|$email|g" \
+    -e "s|__PASSWORD_HASH__|$PASSWORD_HASH|g" \
+    "./authentik/blueprints/admin-user.yaml"
+
 
 yq -iy --arg pass "$PG_PASS" '
   .database.name = "psycopg2" |
@@ -128,17 +137,23 @@ echo "MATRIX_CLIENT_SECRET=$MATRIX_CLIENT_SECRET" >> .env
 # We use --arg to pass variables safely into the query
 echo "Injecting values into template..."
 
-yq -iy \
-  --arg id "$MATRIX_CLIENT_ID" \
-  --arg secret "$MATRIX_CLIENT_SECRET" \
-  --arg domain "$MATRIX_DOMAIN" \
-  --arg domain "$domain" \
-  '
-  .metadata.name = $domain+" Matrix Synapse Integration" |  
-  .entries[0].attrs.client_id = $id |
-  .entries[0].attrs.client_secret = $secret |
-  .entries[0].attrs.redirect_uris[0] |= sub("PLACEHOLDER_DOMAIN"; $domain)
-  ' ./authentik/blueprints/synapse.yaml
+# yq -iy \
+#   --arg id "$MATRIX_CLIENT_ID" \
+#   --arg secret "$MATRIX_CLIENT_SECRET" \
+#   --arg domain "$MATRIX_DOMAIN" \
+#   --arg domain "$domain" \
+#   '
+#   .metadata.name = $domain+" Matrix Synapse Integration" |  
+#   .entries[0].attrs.client_id = $id |
+#   .entries[0].attrs.client_secret = $secret |
+#   .entries[0].attrs.redirect_uris[0] |= sub("PLACEHOLDER_DOMAIN"; $domain)
+#   ' ./authentik/blueprints/synapse.yaml
+sed -i \
+    -e "s|__CLIENT_ID__|$MATRIX_CLIENT_ID|g" \
+    -e "s|__CLIENT_SECRET__|$MATRIX_CLIENT_SECRET|g" \
+    -e "s|__DOMAIN__|$domain|g" \
+    -e "s|__MATRIX_DOMAIN__|$MATRIX_DOMAIN|g" \
+    "./authentik/blueprints/synapse.yaml"
 
 yq -iy \
   --arg id "$MATRIX_CLIENT_ID" \
