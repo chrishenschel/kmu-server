@@ -22,6 +22,7 @@ read -p "Enter domain (example.com): " domain
 read -p "Enter username: (mmustermann) " username
 read -p "Enter Full Name (Max Mustermann): " userfullname
 read -p "Enter password: " password
+read -p "Enter email: " email
 
 
 PG_PASS="$(openssl rand -base64 36 | tr -d '\n')"
@@ -41,7 +42,7 @@ echo "USERNAME=$username" >> .env
 echo "USERFULLNAME=$userfullname" >> .env
 echo "PASSWORD=$password" >> .env
 
-PASSWORD_HASH=$(docker run --rm ghcr.io/goauthentik/server:2024.12.0 python -c "from django.contrib.auth.hashers import make_password; print(make_password('$password'))")
+PASSWORD_HASH=$(docker run --rm ghcr.io/goauthentik/server:latest python -c "from django.contrib.auth.hashers import make_password; print(make_password('$password'))")
 echo "PASSWORD_HASH=$PASSWORD_HASH" >> .env
 
 docker network create caddy-proxy
@@ -65,7 +66,7 @@ yq -iy \
   --arg pwd "$PASSWORD_HASH" \
   --arg domain "$domain" \
   '
-  .metadata.name = "$domain User Creation" |
+  .metadata.name = $domain+" Initial User Creation" |
   .entries[0].identifiers.username = $user |
   .entries[0].attrs.name = $name |
   .entries[0].attrs.email = $email |
@@ -109,14 +110,14 @@ echo "Generating secure credentials..."
 MATRIX_CLIENT_ID=$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9' | head -c 40)
 MATRIX_CLIENT_SECRET=$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9' | head -c 60)
 
-echo "Client ID:     $MATRIX_CLIENT_ID"
-echo "Client Secret: $MATRIX_CLIENT_SECRET"
+echo "MATRIX_CLIENT_ID=$MATRIX_CLIENT_ID" >> .env
+echo "MATRIX_CLIENT_SECRET=$MATRIX_CLIENT_SECRET" >> .env
 
 # --- PROCESS WITH YQ (Python Version) ---
 # We use --arg to pass variables safely into the query
 echo "Injecting values into template..."
 
-yq -y \
+yq -iy \
   --arg id "$MATRIX_CLIENT_ID" \
   --arg secret "$MATRIX_CLIENT_SECRET" \
   --arg domain "$MATRIX_DOMAIN" \
