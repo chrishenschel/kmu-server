@@ -1,0 +1,8 @@
+version: 1
+metadata:
+  name: Auto Config
+entries:
+  - attrs:
+      name: My Application
+    model: authentik_core.application
+    # ... rest of your config

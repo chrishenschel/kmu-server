@@ -82,9 +82,12 @@ log "Configuring Firewall (UFW)..."
 ufw allow OpenSSH
 ufw allow 80/tcp
 ufw allow 443/tcp
+ufw allow 25/tcp # SMTP
+ufw allow 465/tcp # SMTPS (SMTP über SSL/TLS)
+ufw allow 993/tcp # IMAPS (IMAP über SSL/TLS)
 # Enable UFW (implicitly handles existing connections so we don't lock ourselves out)
 echo "y" | ufw enable
-success "Firewall configured: SSH, HTTP, and HTTPS allowed."
+success "Firewall configured: SSH, HTTP, HTTPS, SMTP, SMTPS, and IMAPS allowed."
 
 # --- Security: SSH Hardening (Optional but recommended) ---
 # Note: These are commented out as they require manual confirmation to avoid lockouts.

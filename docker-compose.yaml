@@ -51,6 +51,10 @@ services:
       AUTHENTIK_POSTGRESQL__PASSWORD: "${PG_PASS}"
       AUTHENTIK_POSTGRESQL__USER: postgres
       AUTHENTIK_SECRET_KEY: ${AUTHENTIK_SECRET_KEY:?secret key required}
+      # Required to skip the setup wizard
+      AUTHENTIK_BOOTSTRAP_PASSWORD: ${AUTHENTIK_BOOTSTRAP_PASSWORD:?password required}
+      AUTHENTIK_BOOTSTRAP_TOKEN: ${AUTHENTIK_BOOTSTRAP_TOKEN:?token required}
+      AUTHENTIK_BOOTSTRAP_EMAIL: ${AUTHENTIK_BOOTSTRAP_EMAIL:?email required}
     image: ghcr.io/goauthentik/server:2025.12.4
     # ports:
     #   - ${COMPOSE_PORT_HTTP:-9000}:9000
@@ -59,6 +63,7 @@ services:
     volumes:
       - ./authentik/data:/data
       - ./authentik/custom-templates:/templates
+      - ./authentik/auto-config.yaml:/blueprints/custom/my-config.yaml
     networks:
       - caddy-proxy
       - database
@@ -76,6 +81,10 @@ services:
       AUTHENTIK_POSTGRESQL__PASSWORD: "${PG_PASS}"
       AUTHENTIK_POSTGRESQL__USER: postgres
       AUTHENTIK_SECRET_KEY: ${AUTHENTIK_SECRET_KEY:?secret key required}
+      # Required to skip the setup wizard
+      AUTHENTIK_BOOTSTRAP_PASSWORD: ${AUTHENTIK_BOOTSTRAP_PASSWORD:?password required}
+      AUTHENTIK_BOOTSTRAP_TOKEN: ${AUTHENTIK_BOOTSTRAP_TOKEN:?token required}
+      AUTHENTIK_BOOTSTRAP_EMAIL: ${AUTHENTIK_BOOTSTRAP_EMAIL:?email required}
     image: ghcr.io/goauthentik/server:2025.12.4
     restart: unless-stopped
     user: root
@@ -84,6 +93,7 @@ services:
       - ./authentik/data:/data
       - ./authentik/certs:/certs
       - ./authentik/custom-templates:/templates
+      - ./authentik/auto-config.yaml:/blueprints/custom/my-config.yaml
     networks:
       - database
 
