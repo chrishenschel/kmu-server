@@ -88,6 +88,10 @@ chown 991:991 ./synapse/data/$domain.signing.key
 
 sed -i \
     -e "s|__DOMAIN__|$domain|g" \
+    "./caddy/Caddyfile"
+
+sed -i \
+    -e "s|__DOMAIN__|$domain|g" \
     -e "s|__USER__|$username|g" \
     -e "s|__NAME__|$userfullname|g" \
     -e "s|__EMAIL__|$email|g" \
@@ -193,3 +197,25 @@ yq -iy \
   .disable_login_language_selector = false |
   .disable_3pid_login = true
   ' ./element/config.json
+
+
+  # STALWART
+  # --- GENERATE CREDENTIALS ---
+STALWART_CLIENT_ID=$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9' | head -c 40)
+STALWART_CLIENT_SECRET=$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9' | head -c 60)
+echo "STALWART_CLIENT_ID=$STALWART_CLIENT_ID" >> .env
+echo "STALWART_CLIENT_SECRET=$STALWART_CLIENT_SECRET" >> .env
+echo "Generated Stalwart Client ID: $STALWART_CLIENT_ID"
+
+# --- UPDATE BLUEPRINT ---
+sed -i \
+    -e "s|__CLIENT_ID__|$STALWART_CLIENT_ID|g" \
+    -e "s|__CLIENT_SECRET__|$STALWART_CLIENT_SECRET|g" \
+    -e "s|__DOMAIN__|$domain|g" \
+    "./authentik/blueprints/stalwart.yaml"
+
+sed -i \
+    -e "s|__CLIENT_ID__|$STALWART_CLIENT_ID|g" \
+    -e "s|__CLIENT_SECRET__|$STALWART_CLIENT_SECRET|g" \
+    -e "s|__DOMAIN__|$domain|g" \
+    "./stalwart/data/etc/config.toml"

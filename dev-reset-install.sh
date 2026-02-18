@@ -5,7 +5,7 @@ rm -rf ./synapse/
 rm -rf ./stalwart/
 rm -rf ./element/
 rm -rf ./authentic/
-rm -rf ./caddy/
+#rm -rf ./caddy/ #keep caddy, because we do not want to get rid of the certificates
 rm -rf ./postgres/
 rm -rf ./static/
 
