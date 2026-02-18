@@ -1,0 +1,37 @@
+version: 1
+metadata:
+  name: Matrix Synapse Integration
+  labels:
+    type: custom
+
+entries:
+  # 1. OAuth2 Provider
+  - model: authentik_providers_oauth2.oauth2provider
+    id: synapse-provider
+    identifiers:
+      name: Synapse Provider
+    attrs:
+      client_id: PLACEHOLDER_CLIENT_ID
+      client_secret: PLACEHOLDER_CLIENT_SECRET
+      # Synapse requires this specific callback path
+      redirect_uris:
+        - https://PLACEHOLDER_DOMAIN/_synapse/client/oidc/callback
+      token_validity: hours=1
+      # Map the standard scopes required by Synapse
+      property_mappings:
+        - !Find [authentik_providers_oauth2.scopemapping, [scope_name, "email"]]
+        - !Find [authentik_providers_oauth2.scopemapping, [scope_name, "profile"]]
+        - !Find [authentik_providers_oauth2.scopemapping, [scope_name, "openid"]]
+    state: present
+
+  # 2. Application
+  - model: authentik_core.application
+    id: synapse-app
+    identifiers:
+      slug: matrix-synapse
+    attrs:
+      name: Matrix Synapse
+      slug: matrix-synapse
+      provider: !KeyOf synapse-provider
+      policy_engine_mode: any
+    state: present

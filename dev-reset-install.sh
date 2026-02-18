@@ -1,5 +1,5 @@
 #!/bin/bash
-docker compose -f docker-compose.yaml down 
+docker compose down -v
 rm .env
 rm /synapse/data/*
 rm -rf /stalwart/data/etc

@@ -1,0 +1,16 @@
+version: 1
+metadata:
+  name: Custom Admin User
+  labels:
+    type: custom
+entries:
+  - model: authentik_core.user
+    identifiers:
+      username: PLACEHOLDER_USER
+    attrs:
+      name: PLACEHOLDER_NAME
+      email: PLACEHOLDER_EMAIL
+      # This flag makes them an admin
+      is_superuser: true
+      password: PLACEHOLDER_HASH
+    state: present

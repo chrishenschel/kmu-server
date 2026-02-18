@@ -63,7 +63,7 @@ services:
     volumes:
       - ./authentik/data:/data
       - ./authentik/custom-templates:/templates
-      - ./authentik/auto-config.yaml:/blueprints/custom/my-config.yaml
+      - ./authentik/blueprints:/blueprints/custom
     networks:
       - caddy-proxy
       - database
@@ -93,7 +93,7 @@ services:
       - ./authentik/data:/data
       - ./authentik/certs:/certs
       - ./authentik/custom-templates:/templates
-      - ./authentik/auto-config.yaml:/blueprints/custom/my-config.yaml
+      - ./authentik/blueprints:/blueprints/custom
     networks:
       - database
 
