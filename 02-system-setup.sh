@@ -53,8 +53,10 @@ b64_hash = base64.b64encode(dk).decode("ascii").strip()
 print(f"pbkdf2_sha256${iterations}${salt}${b64_hash}")
 ' "$password")
 
-
-echo "PASSWORD_HASH=$PASSWORD_HASH" >> .env
+DOCKER_SAFE_HASH="${PASSWORD_HASH//$/$$}"
+# to fix the $ treated as variable 
+echo "PASSWORD_HASH=$DOCKER_SAFE_HASH" >> .env
+# echo "PASSWORD_HASH=$PASSWORD_HASH" >> .env
 
 docker network create caddy-proxy
 docker network create database
