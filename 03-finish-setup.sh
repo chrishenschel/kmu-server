@@ -7,7 +7,7 @@ PROVIDER_NAME="Dozzle Proxy"
 echo "Linking '$PROVIDER_NAME' to '$OUTPOST_NAME'..."
 
 # Run a python script inside the Authentik container to safely append the provider
-docker compose exec -T authentik-server python3 manage.py shell -c "
+docker exec -t authentik-server python3 manage.py shell -c "
 from authentik.outposts.models import Outpost
 from authentik.providers.proxy.models import ProxyProvider
 
