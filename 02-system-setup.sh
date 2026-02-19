@@ -129,7 +129,7 @@ yq -iy --arg pass "$PG_PASS" '
   .retention.default_policy.max_lifetime = "365d" |
   .url_preview_enabled = true |
   .url_preview_ip_range_blacklist = ["127.0.0.0/8", "10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16"] |
-  .report_stats = false
+  .report_stats = false 
 ' ./synapse/data/homeserver.yaml
 
 # MATRIX Config!
@@ -181,7 +181,10 @@ yq -iy \
   .oidc_providers[0].client_secret = $secret |
   .oidc_providers[0].scopes = ["openid", "profile", "email"] |
   .oidc_providers[0].user_mapping_provider.config.localpart_template = "{{ user.preferred_username }}" |
-  .oidc_providers[0].user_mapping_provider.config.display_name_template = "{{ user.name }}"
+  .oidc_providers[0].user_mapping_provider.config.display_name_template = "{{ user.name }}" |
+  .jwt_config.enabled = true |
+  .jwt_config.secret = $secret |
+  .jwt_config.algorithm = "RS256"    
   ' ./synapse/data/homeserver.yaml
 
 
