@@ -190,21 +190,11 @@ MATRIX_HOMESERVER="https://$MATRIX_DOMAIN"
 IDENTITY_SERVER="https://$MATRIX_DOMAIN" 
 BRAND_NAME="$domain Chat"
 
-yq -iy \
-  --arg hs_url "$MATRIX_HOMESERVER" \
-  --arg is_url "$IDENTITY_SERVER" \
-  --arg brand "$BRAND_NAME" \
-  '
-  .default_server_config["m.homeserver"].base_url = $hs_url |
-  .default_server_config["m.homeserver"].server_name = $hs_url |
-  .default_server_config["m.identity_server"].base_url = $is_url |
-  .brand = $brand |
-  .disable_custom_urls = true |
-  .disable_guests = true |
-  .disable_login_language_selector = false |
-  .disable_3pid_login = true
-  ' ./element/config.json
-
+sed -i \
+    -e "s|PLACEHOLDER_BRAND|$BRAND_NAME|g" \
+    -e "s|PLACEHOLDER_HOMESERVER|$MATRIX_HOMESERVER|g" \
+    -e "s|PLACEHOLDER_IDENTITY_SERVER|$IDENTITY_SERVER|g" \
+    "./element/config.json"
 
   # STALWART
   # --- GENERATE CREDENTIALS ---
