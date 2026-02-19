@@ -13,7 +13,9 @@ entries:
       client_id: __CLIENT_ID__
       client_secret: __CLIENT_SECRET__
       # Stalwart expects the callback at /auth/oidc
-      redirect_uris: https://mail.__DOMAIN__/auth/oidc
+      redirect_uris:
+        - matching_mode: strict
+          url: https://mail.test.local/auth/oidc
       token_validity: hours=1
       
       # Required Flows
@@ -34,6 +36,7 @@ entries:
     attrs:
       name: Stalwart Mail
       slug: stalwart-mail
+      icon: https://goauthentik.io/img/icon.png      
       provider: !KeyOf stalwart-provider
       policy_engine_mode: any
     state: present
