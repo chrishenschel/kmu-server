@@ -233,6 +233,9 @@ sed -i \
     -e "s|__DOMAIN__|$domain|g" \
     "./authentik/blueprints/dozzle.yaml"
 
+# CRITICAL: Strip CRLF (\r) line endings from all blueprints to ensure Authentik can parse them
+sed -i 's/\r$//' ./authentik/blueprints/*.yaml
+
 
 ### maybe later?
 # Promote your OIDC user to superuser
