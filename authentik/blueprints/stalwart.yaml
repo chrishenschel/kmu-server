@@ -15,7 +15,7 @@ entries:
       # Stalwart expects the callback at /auth/oidc
       redirect_uris:
         - matching_mode: strict
-          url: https://mail.test.local/auth/oidc
+          url: https://mail.__DOMAIN__/auth/oidc
       token_validity: hours=1
       
       # Required Flows
@@ -36,7 +36,7 @@ entries:
     attrs:
       name: Stalwart Mail
       slug: stalwart-mail
-      icon: https://goauthentik.io/img/icon.png      
+      icon: https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/stalwart.png 
       provider: !KeyOf stalwart-provider
       policy_engine_mode: any
     state: present
