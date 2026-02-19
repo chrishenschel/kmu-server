@@ -17,12 +17,19 @@ error() {
     echo -e "\033[0;31m[ERROR]\033[0m $1" | tee -a "$LOG_FILE" >&2
 }
 
-# ask for domain, username, user, password and store into local variables
-read -p "Enter domain (example.com): " domain
-read -p "Enter username: (mmustermann) " username
-read -p "Enter Full Name (Max Mustermann): " userfullname
-read -p "Enter password: " password
-read -p "Enter email: " email
+# Usage: ./02-system-setup.sh [domain] [username] [fullname] [password] [email]
+# Values can be provided as positional arguments or will be prompted interactively.
+domain="${1:-}"
+username="${2:-}"
+userfullname="${3:-}"
+password="${4:-}"
+email="${5:-}"
+
+[ -z "$domain" ]       && read -p "Enter domain (example.com): " domain
+[ -z "$username" ]     && read -p "Enter username: (mmustermann) " username
+[ -z "$userfullname" ] && read -p "Enter Full Name (Max Mustermann): " userfullname
+[ -z "$password" ]     && read -p "Enter password: " password
+[ -z "$email" ]        && read -p "Enter email: " email
 
 
 PG_PASS="$(openssl rand -base64 36 | tr -d '\n')"

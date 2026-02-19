@@ -28,7 +28,7 @@ logs.__DOMAIN__ {
     # This sends the request to the internal Authentik server first.
     # If not logged in, Authentik redirects them to the login page.
 #    forward_auth authentik-server:9000 {
-    forward_auth https://auth.__DOMAIN__ {
+    forward_auth auth.__DOMAIN__ {
         uri /outpost.goauthentik.io/auth/caddy
         copy_headers X-Authentik-Username X-Authentik-Groups X-Authentik-Email X-Authentik-Name X-Authentik-Uid X-Authentik-Jwt X-Authentik-Meta-Jwks X-Authentik-Meta-Outpost X-Authentik-Meta-Provider X-Authentik-Meta-App X-Authentik-Meta-Version
     }
