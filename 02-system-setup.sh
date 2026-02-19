@@ -50,19 +50,19 @@ echo "USERNAME=$username" >> .env
 echo "USERFULLNAME=$userfullname" >> .env
 echo "PASSWORD=$password" >> .env
 
-PASSWORD_HASH=$(python3 -c '
-import hashlib, base64, secrets, sys
-password = sys.argv[1]
-salt = secrets.token_urlsafe(12)
-iterations = 600000
-dk = hashlib.pbkdf2_hmac("sha256", password.encode("utf-8"), salt.encode("utf-8"), iterations)
-b64_hash = base64.b64encode(dk).decode("ascii").strip()
-print(f"pbkdf2_sha256${iterations}${salt}${b64_hash}")
-' "$password")
+# PASSWORD_HASH=$(python3 -c '
+# import hashlib, base64, secrets, sys
+# password = sys.argv[1]
+# salt = secrets.token_urlsafe(12)
+# iterations = 600000
+# dk = hashlib.pbkdf2_hmac("sha256", password.encode("utf-8"), salt.encode("utf-8"), iterations)
+# b64_hash = base64.b64encode(dk).decode("ascii").strip()
+# print(f"pbkdf2_sha256${iterations}${salt}${b64_hash}")
+# ' "$password")
 
-DOCKER_SAFE_HASH="${PASSWORD_HASH//$/$$}"
+# DOCKER_SAFE_HASH="${PASSWORD_HASH//$/$$}"
 # to fix the $ treated as variable 
-echo "PASSWORD_HASH=$DOCKER_SAFE_HASH" >> .env
+# echo "PASSWORD_HASH=$DOCKER_SAFE_HASH" >> .env
 # echo "PASSWORD_HASH=$PASSWORD_HASH" >> .env
 
 docker network create caddy-proxy
@@ -102,7 +102,7 @@ sed -i \
     -e "s|__USER__|$username|g" \
     -e "s|__NAME__|$userfullname|g" \
     -e "s|__EMAIL__|$email|g" \
-    -e "s|__PASSWORD_HASH__|$PASSWORD_HASH|g" \
+    -e "s|__PASSWORD_HASH__|$password|g" \
     "./authentik/blueprints/admin-user.yaml"
 
 
