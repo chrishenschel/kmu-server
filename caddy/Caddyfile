@@ -15,6 +15,14 @@ www.__DOMAIN__ __DOMAIN__ {
         respond `{"m.server":"matrix.__DOMAIN__:443"}`
     }
 
+    handle /_matrix/* {
+        reverse_proxy synapse:8008
+    }
+
+    handle /_synapse/* {
+        reverse_proxy synapse:8008
+    }
+
     handle {
         reverse_proxy homepage:80
     }

@@ -106,7 +106,8 @@ sed -i \
     "./authentik/blueprints/admin-user.yaml"
 
 
-yq -iy --arg pass "$PG_PASS" '
+yq -iy --arg pass "$PG_PASS" --arg baseurl "https://matrix.$domain" '
+  .public_baseurl = $baseurl |
   .database.name = "psycopg2" |
   .database.allow_unsafe_locale = true |  
   .database.args.host = "postgres" |
