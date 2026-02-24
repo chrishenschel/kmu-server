@@ -190,13 +190,11 @@ yq -iy \
 
 # ELEMENT
 MATRIX_HOMESERVER="https://$MATRIX_DOMAIN"
-IDENTITY_SERVER="https://$MATRIX_DOMAIN" 
 BRAND_NAME="$domain Chat"
 
 sed -i \
     -e "s|PLACEHOLDER_BRAND|$BRAND_NAME|g" \
     -e "s|PLACEHOLDER_HOMESERVER|$MATRIX_HOMESERVER|g" \
-    -e "s|PLACEHOLDER_IDENTITY_SERVER|$IDENTITY_SERVER|g" \
     "./element/config.json"
 
   # STALWART

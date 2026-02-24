@@ -2,9 +2,6 @@
     "default_server_config": {
         "m.homeserver": {
             "base_url": "PLACEHOLDER_HOMESERVER"
-        },
-        "m.identity_server": {
-            "base_url": "PLACEHOLDER_IDENTITY_SERVER"
         }
     },
     "brand": "PLACEHOLDER_BRAND",
