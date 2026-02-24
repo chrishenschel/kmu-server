@@ -10,8 +10,8 @@ entries:
     attrs:
       name: __NAME__
       email: __EMAIL__
-      # This flag makes them an admin
-      is_superuser: true
-      is_staff: true
       password: __PASSWORD_HASH__
+      type: internal
+      groups:
+        - !Find [authentik_core.group, [name, "authentik Admins"]]
     state: present
