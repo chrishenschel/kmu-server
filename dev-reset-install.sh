@@ -7,6 +7,7 @@ rm -rf ./element/
 rm -rf ./authentic/
 #rm -rf ./caddy/ #keep caddy, because we do not want to get rid of the certificates
 rm -rf ./postgres/
+rm -rf ./nextcloud/
 rm -rf ./static/
 docker volume rm infra_synapse_data
 
