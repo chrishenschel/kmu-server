@@ -165,7 +165,7 @@ services:
     environment:
       AUTHENTIK_HOST: http://authentik-server:9000
       AUTHENTIK_INSECURE: "true"
-      AUTHENTIK_TOKEN: "${AUTHENTIK_BOOTSTRAP_TOKEN}"
+      AUTHENTIK_TOKEN: "${LDAP_OUTPOST_TOKEN}"
     depends_on:
       - authentikserver
     networks:
