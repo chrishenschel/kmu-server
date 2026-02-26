@@ -44,14 +44,23 @@ except Exception:
             sleep 2
         done
 
+        # Trigger first login to create the account in Stalwart
+        echo "Triggering account creation for $STALWART_USER..."
+        curl -ks -u "$STALWART_USER:$STALWART_ADMIN_PASS" "$STALWART_URL/api/principal" >/dev/null 2>&1
+        sleep 3
+
         echo "Promoting $STALWART_USER to Stalwart admin..."
-        curl -ksf -X PATCH \
+        ADMIN_PERMS='[{"action":"set","field":"enabledPermissions","value":["ai-model-interact","api-key-create","api-key-delete","api-key-get","api-key-list","api-key-update","authenticate","authenticate-oauth","blob-fetch","individual-create","individual-delete","individual-get","individual-list","individual-update","group-create","group-delete","group-get","group-list","group-update","domain-create","domain-delete","domain-get","domain-list","domain-update","role-create","role-delete","role-get","role-list","role-update","principal-create","principal-delete","principal-get","principal-list","principal-update","settings-list","settings-update","settings-delete","settings-reload","logs-view","tracing-get","tracing-list","tracing-live","troubleshoot","metrics-list","metrics-live","manage-encryption","manage-passwords","message-queue-delete","message-queue-get","message-queue-list","message-queue-update","incoming-report-delete","incoming-report-get","incoming-report-list","outgoing-report-delete","outgoing-report-get","outgoing-report-list","dkim-signature-create","dkim-signature-get","spam-filter-test","spam-filter-train","spam-filter-update","mailing-list-create","mailing-list-delete","mailing-list-get","mailing-list-list","mailing-list-update","oauth-client-create","oauth-client-delete","oauth-client-get","oauth-client-list","oauth-client-update","oauth-client-override","oauth-client-registration","tenant-create","tenant-delete","tenant-get","tenant-list","tenant-update","purge-account","purge-blob-store","purge-data-store","purge-in-memory-store","fts-reindex","restart","undelete","impersonate","unlimited-requests","unlimited-uploads","webadmin-update","email-send","email-receive"]}]'
+        RESULT=$(curl -ks -X PATCH \
             -u "admin:$STALWART_ADMIN_PASS" \
             "$STALWART_URL/api/principal/$STALWART_USER" \
             -H "Content-Type: application/json" \
-            -d "[{\"action\": \"set\", \"field\": \"roles\", \"value\": [\"admin\"]}]" && \
-            echo "User $STALWART_USER promoted to admin in Stalwart." || \
-            echo "WARNING: Could not promote $STALWART_USER. Do it manually via the Stalwart admin panel."
+            -d "$ADMIN_PERMS" 2>&1)
+        if echo "$RESULT" | grep -q "error"; then
+            echo "WARNING: Could not promote $STALWART_USER ($RESULT). Do it manually via the Stalwart admin panel."
+        else
+            echo "User $STALWART_USER promoted to admin in Stalwart."
+        fi
 
         exit 0
     fi
