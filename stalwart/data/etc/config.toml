@@ -1,12 +1,29 @@
+[server]
+hostname = "mail.__DOMAIN__"
+
 [server.listener.smtp]
 bind = "[::]:25"
 protocol = "smtp"
+
+[server.listener.smtps]
+bind = "[::]:465"
+protocol = "smtp"
+tls.implicit = true
+
+[server.listener.imaps]
+bind = "[::]:993"
+protocol = "imap"
+tls.implicit = true
 
 [server.listener.http]
 bind = ["0.0.0.0:8080"]
 protocol = "http"
 url = "https://mail.__DOMAIN__"
 use-proxy-headers = true
+
+[certificate.default]
+cert = "/opt/stalwart/caddy-data/caddy/certificates/acme-v02.api.letsencrypt.org-directory/mail.__DOMAIN__/mail.__DOMAIN__.crt"
+private-key = "/opt/stalwart/caddy-data/caddy/certificates/acme-v02.api.letsencrypt.org-directory/mail.__DOMAIN__/mail.__DOMAIN__.key"
 
 [storage]
 data = "postgres"
@@ -58,7 +75,7 @@ secret-changed = "mail"
 
 [tracer.log]
 type = "log"
-level = "debug"
+level = "info"
 path = "/opt/stalwart/logs"
 prefix = "stalwart.log"
 rotate = "daily"
@@ -67,7 +84,7 @@ enable = true
 
 [tracer.stdout]
 type = "stdout"
-level = "debug"
+level = "info"
 ansi = true
 enable = true
 

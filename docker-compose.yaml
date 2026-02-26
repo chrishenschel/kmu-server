@@ -178,6 +178,7 @@ services:
     restart: unless-stopped
     volumes:
       - ./stalwart/data:/opt/stalwart
+      - ./caddy/data:/opt/stalwart/caddy-data:ro
     ports:
       - "25:25" # SMTP
       - "465:465" # SMTPS
@@ -190,6 +191,28 @@ services:
     networks:
       - caddy-proxy
       - database
+
+  ## User sync (Authentik -> Stalwart)
+  user-sync:
+    image: python:3-alpine
+    container_name: user-sync
+    restart: unless-stopped
+    command: python3 /app/user-sync.py
+    volumes:
+      - ./scripts/user-sync.py:/app/user-sync.py:ro
+    environment:
+      DOMAIN: "${DOMAIN}"
+      STALWART_URL: "http://stalwart-mail:8080"
+      STALWART_ADMIN_USER: "admin"
+      STALWART_ADMIN_PASS: "${PASSWORD}"
+      AUTHENTIK_URL: "http://authentik-server:9000"
+      AUTHENTIK_TOKEN: "${AUTHENTIK_BOOTSTRAP_TOKEN}"
+      SYNC_INTERVAL: "300"
+    depends_on:
+      - authentikserver
+      - stalwart
+    networks:
+      - caddy-proxy
 
   ## Static hosting
   homepage:

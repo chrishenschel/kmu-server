@@ -223,6 +223,140 @@ sed -i \
 sed -i 's/\r$//' ./authentik/blueprints/*.yaml
 
 
-### maybe later?
-# Promote your OIDC user to superuser
-#./stalwart-cli acl add superuser chris@tudels.com
+docker compose up -d
+
+### --- POST-DEPLOY: LDAP Outpost Token + Stalwart Admin Promotion ---
+
+log "Waiting for Authentik to be ready and blueprints to be applied..."
+
+ATTEMPT=0
+while true; do
+    ATTEMPT=$((ATTEMPT + 1))
+
+    TOKEN_KEY=$(docker exec authentik-server python3 -c "
+import django, os, sys
+os.environ['DJANGO_SETTINGS_MODULE'] = 'authentik.root.settings'
+sys.stderr = open(os.devnull, 'w')
+django.setup()
+from authentik.outposts.models import Outpost
+try:
+    outpost = Outpost.objects.get(name='Stalwart LDAP Outpost')
+    print(outpost.token.key, end='')
+except Exception:
+    sys.exit(1)
+" 2>/dev/null)
+
+    if [ $? -eq 0 ] && [ -n "$TOKEN_KEY" ]; then
+        success "Got outpost token: ${TOKEN_KEY:0:8}..."
+
+        sed -i '/LDAP_OUTPOST_TOKEN/d' .env
+        echo "LDAP_OUTPOST_TOKEN=$TOKEN_KEY" >> .env
+
+        docker compose up -d authentik-ldap
+        success "LDAP outpost restarted with correct token."
+        break
+    fi
+
+    log "  Attempt $ATTEMPT - outpost not ready yet, waiting 10s..."
+    sleep 10
+done
+
+STALWART_URL="https://mail.${domain}"
+
+log "Waiting for Stalwart and LDAP outpost to be ready..."
+for i in $(seq 1 30); do
+    if curl -ksf -o /dev/null "$STALWART_URL/login" 2>/dev/null; then
+        break
+    fi
+    sleep 2
+done
+sleep 10
+
+ADMIN_PERMS='[{"action":"set","field":"enabledPermissions","value":["ai-model-interact","api-key-create","api-key-delete","api-key-get","api-key-list","api-key-update","authenticate","authenticate-oauth","blob-fetch","individual-create","individual-delete","individual-get","individual-list","individual-update","group-create","group-delete","group-get","group-list","group-update","domain-create","domain-delete","domain-get","domain-list","domain-update","role-create","role-delete","role-get","role-list","role-update","principal-create","principal-delete","principal-get","principal-list","principal-update","settings-list","settings-update","settings-delete","settings-reload","logs-view","tracing-get","tracing-list","tracing-live","troubleshoot","metrics-list","metrics-live","manage-encryption","manage-passwords","message-queue-delete","message-queue-get","message-queue-list","message-queue-update","incoming-report-delete","incoming-report-get","incoming-report-list","outgoing-report-delete","outgoing-report-get","outgoing-report-list","dkim-signature-create","dkim-signature-get","spam-filter-test","spam-filter-train","spam-filter-update","mailing-list-create","mailing-list-delete","mailing-list-get","mailing-list-list","mailing-list-update","oauth-client-create","oauth-client-delete","oauth-client-get","oauth-client-list","oauth-client-update","oauth-client-override","oauth-client-registration","tenant-create","tenant-delete","tenant-get","tenant-list","tenant-update","purge-account","purge-blob-store","purge-data-store","purge-in-memory-store","fts-reindex","restart","undelete","impersonate","unlimited-requests","unlimited-uploads","webadmin-update","email-send","email-receive"]}]'
+
+log "Triggering account creation and promoting $username to Stalwart admin..."
+ATTEMPT=0
+while true; do
+    ATTEMPT=$((ATTEMPT + 1))
+    curl -ks -u "$username:$password" "$STALWART_URL/api/principal" >/dev/null 2>&1
+    sleep 2
+    RESULT=$(curl -ks -X PATCH \
+        -u "admin:$password" \
+        "$STALWART_URL/api/principal/$username" \
+        -H "Content-Type: application/json" \
+        -d "$ADMIN_PERMS" 2>&1)
+    if echo "$RESULT" | grep -q "error"; then
+        log "  Attempt $ATTEMPT - account not ready yet, retrying in 5s..."
+        sleep 5
+    else
+        success "User $username promoted to admin in Stalwart."
+        break
+    fi
+done
+
+### --- Configure Stalwart: Domain + Mailbox ---
+
+log "Creating domain $domain in Stalwart..."
+RESULT=$(curl -ks -X POST \
+    -u "admin:$password" \
+    "$STALWART_URL/api/principal" \
+    -H "Content-Type: application/json" \
+    -d "{\"type\": \"domain\", \"name\": \"$domain\"}" 2>&1)
+if echo "$RESULT" | grep -q "error"; then
+    log "Domain creation note: $RESULT"
+else
+    success "Domain $domain created."
+fi
+
+log "Adding email ${username}@${domain} to $username..."
+RESULT=$(curl -ks -X PATCH \
+    -u "admin:$password" \
+    "$STALWART_URL/api/principal/$username" \
+    -H "Content-Type: application/json" \
+    -d "[{\"action\": \"set\", \"field\": \"emails\", \"value\": [\"$username@$domain\"]}]" 2>&1)
+if echo "$RESULT" | grep -q "error"; then
+    log "Email assignment note: $RESULT"
+else
+    success "Email addresses assigned to $username."
+fi
+
+log "Generating DKIM key for $domain..."
+RESULT=$(curl -ks -X POST \
+    -u "admin:$password" \
+    "$STALWART_URL/api/dkim" \
+    -H "Content-Type: application/json" \
+    -d "{\"algorithm\": \"Ed25519\", \"domain\": \"$domain\"}" 2>&1)
+if echo "$RESULT" | grep -q "error"; then
+    log "DKIM generation note: $RESULT"
+else
+    success "DKIM key generated for $domain."
+fi
+
+log "Fetching recommended DNS records from Stalwart..."
+DNS_JSON=$(curl -ks -u "admin:$password" "$STALWART_URL/api/dns/records/$domain" 2>&1)
+if echo "$DNS_JSON" | python3 -c "import sys,json; json.load(sys.stdin)['data']" >/dev/null 2>&1; then
+    echo ""
+    echo "============================================"
+    echo "  DNS RECORDS TO ADD FOR $domain"
+    echo "============================================"
+    echo ""
+    echo "1. MX Record:"
+    echo "   Type: MX | Host: @ | Value: mail.$domain | Priority: 10"
+    echo ""
+    echo "$DNS_JSON" | python3 -c "
+import sys, json
+records = json.load(sys.stdin)['data']
+i = 2
+for r in records:
+    if r['type'] == 'MX' or r['type'] == 'CNAME':
+        continue
+    print(f\"{i}. {r['type']} Record:\")
+    print(f\"   Type: {r['type']} | Host: {r['name'].rstrip('.')} | Value: {r['content']}\")
+    print()
+    i += 1
+"
+    echo "============================================"
+fi
+
+success "Setup complete! All services are running."
+success "User sync container will automatically provision Stalwart mailboxes for new Authentik users."
