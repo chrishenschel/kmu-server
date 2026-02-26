@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Admin Panel</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { font-family: system-ui, sans-serif; max-width: 900px; margin: 0 auto; padding: 1.5rem; background: #1a1a2e; color: #eee; }
+    h1 { font-size: 1.5rem; margin-bottom: 1.5rem; }
+    section { background: #16213e; border-radius: 8px; padding: 1.25rem; margin-bottom: 1.5rem; }
+    section h2 { font-size: 1.1rem; margin: 0 0 1rem 0; color: #a0aec0; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { text-align: left; padding: 0.5rem 0.75rem; border-bottom: 1px solid #2d3748; }
+    th { color: #a0aec0; font-weight: 600; }
+    form { display: grid; gap: 0.75rem; max-width: 400px; }
+    label { display: block; font-size: 0.875rem; color: #a0aec0; }
+    input { width: 100%; padding: 0.5rem 0.75rem; border: 1px solid #2d3748; border-radius: 6px; background: #0f0f1a; color: #eee; }
+    button { padding: 0.6rem 1rem; background: #4299e1; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; }
+    button:hover { background: #3182ce; }
+    button:disabled { opacity: 0.6; cursor: not-allowed; }
+    .error { color: #fc8181; font-size: 0.875rem; margin-top: 0.5rem; }
+    .success { color: #68d391; font-size: 0.875rem; margin-top: 0.5rem; }
+    .loading { color: #a0aec0; }
+  </style>
+</head>
+<body>
+  <h1>Admin Panel</h1>
+
+  <section>
+    <h2>Add user</h2>
+    <form id="addUserForm">
+      <div>
+        <label for="username">Username</label>
+        <input id="username" name="username" required placeholder="e.g. jdoe" autocomplete="username">
+      </div>
+      <div>
+        <label for="name">Display name</label>
+        <input id="name" name="name" placeholder="e.g. Jane Doe">
+      </div>
+      <div>
+        <label for="email">Email</label>
+        <input id="email" name="email" type="email" placeholder="optional, defaults to username@domain">
+      </div>
+      <div>
+        <label for="password">Password</label>
+        <input id="password" name="password" type="password" required placeholder="Used for Authentik, Mail, Nextcloud" autocomplete="new-password">
+      </div>
+      <button type="submit" id="submitBtn">Create user</button>
+      <div id="formMessage"></div>
+    </form>
+  </section>
+
+  <section>
+    <h2>Users</h2>
+    <p id="usersLoading" class="loading">Loading…</p>
+    <table id="usersTable" style="display: none;">
+      <thead>
+        <tr><th>Username</th><th>Name</th><th>Email</th></tr>
+      </thead>
+      <tbody id="usersBody"></tbody>
+    </table>
+  </section>
+
+  <script>
+    const form = document.getElementById('addUserForm');
+    const formMessage = document.getElementById('formMessage');
+    const submitBtn = document.getElementById('submitBtn');
+    const usersLoading = document.getElementById('usersLoading');
+    const usersTable = document.getElementById('usersTable');
+    const usersBody = document.getElementById('usersBody');
+
+    function setFormMessage(text, isError) {
+      formMessage.textContent = text;
+      formMessage.className = isError ? 'error' : 'success';
+    }
+
+    async function loadUsers() {
+      try {
+        const r = await fetch('/api/users');
+        if (!r.ok) throw new Error(r.status === 503 ? 'Backend not configured' : await r.text());
+        const data = await r.json();
+        usersBody.innerHTML = (data.users || []).map(u =>
+          `<tr><td>${escapeHtml(u.username)}</td><td>${escapeHtml(u.name)}</td><td>${escapeHtml(u.email)}</td></tr>`
+        ).join('');
+        usersTable.style.display = 'table';
+        usersLoading.style.display = 'none';
+      } catch (e) {
+        usersLoading.textContent = 'Failed to load: ' + e.message;
+      }
+    }
+
+    function escapeHtml(s) {
+      const div = document.createElement('div');
+      div.textContent = s;
+      return div.innerHTML;
+    }
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      formMessage.textContent = '';
+      submitBtn.disabled = true;
+      try {
+        const r = await fetch('/api/users', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            username: document.getElementById('username').value.trim(),
+            name: document.getElementById('name').value.trim(),
+            email: document.getElementById('email').value.trim(),
+            password: document.getElementById('password').value,
+          }),
+        });
+        const data = await r.json().catch(() => ({}));
+        if (!r.ok) {
+          setFormMessage(data.detail || r.statusText || 'Failed', true);
+          return;
+        }
+        setFormMessage(data.message || 'User created.', false);
+        form.reset();
+        loadUsers();
+      } catch (err) {
+        setFormMessage(err.message || 'Request failed', true);
+      } finally {
+        submitBtn.disabled = false;
+      }
+    });
+
+    loadUsers();
+  </script>
+</body>
+</html>

@@ -65,3 +65,11 @@ logs.__DOMAIN__ {
     # 2. If allowed, show the logs
     reverse_proxy dozzle:8080
 }
+
+admin.__DOMAIN__ {
+    forward_auth authentik-server:9000 {
+        uri /outpost.goauthentik.io/auth/caddy
+        copy_headers X-Authentik-Username X-Authentik-Groups X-Authentik-Email X-Authentik-Name X-Authentik-Uid X-Authentik-Jwt X-Authentik-Meta-Jwks X-Authentik-Meta-Outpost X-Authentik-Meta-Provider X-Authentik-Meta-App X-Authentik-Meta-Version
+    }
+    reverse_proxy admin-panel:8000
+}
