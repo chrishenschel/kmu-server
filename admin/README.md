@@ -24,8 +24,7 @@ Small web app for non-technical admins to manage users without touching Authenti
 
 - **Backend:** `admin/backend/` – FastAPI app in `app/main.py`.
 - **Frontend:** `admin/backend/static/index.html` – single HTML page with minimal JS.
-- **Build:** `docker compose build admin-panel`
-- **Run:** `docker compose up -d admin-panel`
+- **Run:** `docker compose up -d admin-panel` (no build: uses `python:3.12-slim` with `./admin/backend` mounted as `/app`; deps are installed on container start, code changes are live).
 
 ## Optional: Nextcloud Mail account
 
