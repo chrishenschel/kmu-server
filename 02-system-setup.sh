@@ -182,10 +182,7 @@ yq -iy \
   .oidc_providers[0].client_secret = $secret |
   .oidc_providers[0].scopes = ["openid", "profile", "email"] |
   .oidc_providers[0].user_mapping_provider.config.localpart_template = "{{ user.preferred_username }}" |
-  .oidc_providers[0].user_mapping_provider.config.display_name_template = "{{ user.name }}" |
-  .jwt_config.enabled = true |
-  .jwt_config.secret = $secret |
-  .jwt_config.algorithm = "RS256"    
+  .oidc_providers[0].user_mapping_provider.config.display_name_template = "{{ user.name }}"
   ' ./synapse/data/homeserver.yaml
 
 
