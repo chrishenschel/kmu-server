@@ -30,25 +30,13 @@ entries:
       policy_engine_mode: any
     state: present
 
-  # 3. API token for the LDAP outpost container
-  - model: authentik_core.token
-    identifiers:
-      identifier: stalwart-ldap-outpost-token
-    attrs:
-      user: !Find [authentik_core.user, [username, "akadmin"]]
-      key: "__LDAP_OUTPOST_TOKEN__"
-      intent: api
-      expiring: false
-    state: present
-
-  # 4. LDAP Outpost
+  # 3. LDAP Outpost
   - model: authentik_outposts.outpost
     id: stalwart-ldap-outpost
     identifiers:
       name: "Stalwart LDAP Outpost"
     attrs:
       type: ldap
-      token_identifier: stalwart-ldap-outpost-token
       providers:
         - !KeyOf stalwart-ldap-provider
     state: present

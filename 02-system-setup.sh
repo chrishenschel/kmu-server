@@ -198,14 +198,11 @@ sed -i \
   # STALWART
   # --- GENERATE LDAP CONFIG ---
 LDAP_BASE_DN=$(echo "$domain" | sed 's/\./,dc=/g' | sed 's/^/dc=/')
-LDAP_OUTPOST_TOKEN=$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9' | head -c 60)
 echo "LDAP_BASE_DN=$LDAP_BASE_DN" >> .env
-echo "LDAP_OUTPOST_TOKEN=$LDAP_OUTPOST_TOKEN" >> .env
 
 # --- UPDATE BLUEPRINT ---
 sed -i \
     -e "s|__LDAP_BASE_DN__|$LDAP_BASE_DN|g" \
-    -e "s|__LDAP_OUTPOST_TOKEN__|$LDAP_OUTPOST_TOKEN|g" \
     -e "s|__DOMAIN__|$domain|g" \
     "./authentik/blueprints/stalwart.yaml"
 
