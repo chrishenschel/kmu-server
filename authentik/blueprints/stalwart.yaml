@@ -17,7 +17,8 @@ entries:
         - matching_mode: strict
           url: https://mail.__DOMAIN__/auth/oidc
       token_validity: hours=1
-      
+      signing_key: !Find [authentik_crypto.certificatekeypair, [name, "authentik Self-signed Certificate"]]
+
       # Required Flows
       authorization_flow: !Find [authentik_flows.flow, [slug, "default-provider-authorization-implicit-consent"]]
       invalidation_flow: !Find [authentik_flows.flow, [slug, "default-provider-invalidation-flow"]]
