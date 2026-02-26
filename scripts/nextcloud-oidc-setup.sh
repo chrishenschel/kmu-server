@@ -26,6 +26,13 @@ if ! docker exec --user www-data nextcloud php occ status 2>/dev/null | grep -q 
     exit 1
 fi
 
+echo "Ensuring HTTPS/overwrite settings (required for OIDC behind reverse proxy)..."
+docker exec --user www-data nextcloud php occ config:system:set overwriteprotocol --value=https
+docker exec --user www-data nextcloud php occ config:system:set overwrite.cli.url --value="https://cloud.${DOMAIN}"
+docker exec --user www-data nextcloud php occ config:system:set overwritehost --value="cloud.${DOMAIN}"
+docker exec --user www-data nextcloud php occ config:system:set trusted_proxies 0 --value="172.16.0.0/12"
+docker exec --user www-data nextcloud php occ config:system:set trusted_proxies 1 --value="10.0.0.0/8" 2>/dev/null || true
+
 echo "Setting allow_local_remote_servers..."
 docker exec --user www-data nextcloud php occ config:system:set allow_local_remote_servers --value=true --type=boolean
 

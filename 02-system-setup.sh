@@ -409,6 +409,14 @@ while true; do
     sleep 10
 done
 
+log "Ensuring HTTPS/overwrite settings (required for OIDC behind reverse proxy)..."
+docker exec --user www-data nextcloud php occ config:system:set overwriteprotocol --value=https
+docker exec --user www-data nextcloud php occ config:system:set overwrite.cli.url --value="https://cloud.${domain}"
+docker exec --user www-data nextcloud php occ config:system:set overwritehost --value="cloud.${domain}"
+# Trust Caddy (and other Docker proxies); Nextcloud will then honour X-Forwarded-Proto
+docker exec --user www-data nextcloud php occ config:system:set trusted_proxies 0 --value="172.16.0.0/12"
+docker exec --user www-data nextcloud php occ config:system:set trusted_proxies 1 --value="10.0.0.0/8" 2>/dev/null || true
+
 log "Allowing local remote servers (needed for Docker-internal OIDC discovery)..."
 docker exec --user www-data nextcloud php occ config:system:set allow_local_remote_servers --value=true --type=boolean
 
