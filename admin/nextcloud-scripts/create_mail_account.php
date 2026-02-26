@@ -2,7 +2,7 @@
 /**
  * Create a Nextcloud Mail account for a user (Stalwart/IMAP).
  * Run inside Nextcloud container with env: NC_MAIL_UID, NC_MAIL_EMAIL, NC_MAIL_PASSWORD, NC_MAIL_HOST.
- * Example: docker exec -e NC_MAIL_UID=user -e NC_MAIL_EMAIL=user@domain -e NC_MAIL_PASSWORD=... -e NC_MAIL_HOST=mail.domain nextcloud php /var/www/html/scripts/create_mail_account.php
+ * Example: docker exec -i -e NC_MAIL_UID=user -e NC_MAIL_EMAIL=user@domain -e NC_MAIL_HOST=mail.domain nextcloud php /usr/local/nextcloud-scripts/create_mail_account.php
  */
 if (php_sapi_name() !== 'cli') {
     die('CLI only');
@@ -25,7 +25,7 @@ if (!$uid || !$email || $password === false || $password === '') {
 }
 
 // Bootstrap Nextcloud (run as www-data, no HTTP user yet)
-require_once dirname(__DIR__) . '/lib/base.php';
+require_once '/var/www/html/lib/base.php';
 
 $userManager = \OC::$server->getUserManager();
 if (!$userManager->userExists($uid)) {

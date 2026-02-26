@@ -205,7 +205,7 @@ services:
       - ./nextcloud/config:/var/www/html/config
       - ./nextcloud/data:/var/www/html/data
       - ./nextcloud/theme:/var/www/html/themes/nextcloud-theme
-      - ./admin/nextcloud-scripts:/var/www/html/scripts:ro
+      - ./admin/nextcloud-scripts:/usr/local/nextcloud-scripts:ro
     environment:
       - NEXTCLOUD_ADMIN_USER=${USERNAME}
       - NEXTCLOUD_ADMIN_PASSWORD=${PASSWORD}

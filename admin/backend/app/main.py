@@ -52,7 +52,7 @@ def create_nextcloud_mail_account(uid: str, email: str, password: str) -> tuple[
                 "-e", f"NC_MAIL_EMAIL={email}",
                 "-e", f"NC_MAIL_HOST={mail_host}",
                 NEXTCLOUD_CONTAINER,
-                "php", "/var/www/html/scripts/create_mail_account.php",
+                "php", "/usr/local/nextcloud-scripts/create_mail_account.php",
             ],
             input=password.encode("utf-8"),
             capture_output=True,
