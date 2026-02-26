@@ -39,6 +39,7 @@ services:
       - database
   postgres-backup:
     image: prodrigestivill/postgres-backup-local
+    container_name: postgres-backup
     restart: always
     volumes:
       - ./backups/postgres:/backups
@@ -148,6 +149,7 @@ services:
     restart: unless-stopped
 
   element:
+    container_name: element
     image: vectorim/element-web:latest
     restart: unless-stopped
     volumes:
