@@ -14,6 +14,7 @@ entries:
       search_mode: cached
       bind_mode: cached
       authorization_flow: !Find [authentik_flows.flow, [slug, "default-authentication-flow"]]
+      invalidation_flow: !Find [authentik_flows.flow, [slug, "default-provider-invalidation-flow"]]
       search_group: !Find [authentik_core.group, [name, "authentik Admins"]]
     state: present
 
