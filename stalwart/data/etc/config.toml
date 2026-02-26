@@ -59,7 +59,7 @@ url = "postgres://postgres:__PG_PASS__@postgres:5432/stalwart"
 # Define the File System connection for Blobs
 [store.fs]
 type = "fs"
-path = "/opt/stalwart-mail/data/blobs" # This path is inside the container
+path = "/opt/stalwart/blobs"
 
 [store.rocksdb]
 type = "rocksdb"

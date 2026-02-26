@@ -32,7 +32,7 @@ email="${5:-}"
 [ -z "$email" ]        && read -p "Enter email: " email
 
 
-PG_PASS="$(openssl rand -base64 36 | tr -d '\n')"
+PG_PASS="$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9' | head -c 48)"
 AUTHENTIK_BOOTSTRAP_PASSWORD="$(openssl rand -base64 60 | tr -d '\n')"
 AUTHENTIK_BOOTSTRAP_TOKEN="$(openssl rand -base64 60 | tr -d '\n')"
 AUTHENTIK_BOOTSTRAP_EMAIL="hostmaster@$domain"
