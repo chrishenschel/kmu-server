@@ -357,6 +357,37 @@ else
     success "DKIM key generated for $domain."
 fi
 
+log "Creating noreply@${domain} mail account in Stalwart (for Nextcloud outgoing mail)..."
+NOREPLY_PASS=$(openssl rand -hex 16)
+echo "NOREPLY_EMAIL=noreply@${domain}" >> .env
+echo "NOREPLY_EMAIL_PASS=$NOREPLY_PASS" >> .env
+export NOREPLY_PASS
+RESULT=$(curl -ks -X POST \
+    -u "admin:$password" \
+    "$STALWART_URL/api/principal" \
+    -H "Content-Type: application/json" \
+    -d "{\"type\": \"individual\", \"name\": \"noreply\", \"emails\": [\"noreply@$domain\"]}" 2>&1)
+if echo "$RESULT" | grep -q "error"; then
+    if echo "$RESULT" | grep -qi "already exists"; then
+        log "noreply principal already exists, setting password only."
+    else
+        log "noreply creation note: $RESULT"
+    fi
+else
+    success "noreply principal created."
+fi
+NOREPLY_HASH=$(python3 -c 'import crypt,os; print(crypt.crypt(os.environ["NOREPLY_PASS"], crypt.mksalt(crypt.METHOD_SHA512)))')
+RESULT=$(curl -ks -X PATCH \
+    -u "admin:$password" \
+    "$STALWART_URL/api/principal/noreply" \
+    -H "Content-Type: application/json" \
+    -d "[{\"action\": \"set\", \"field\": \"secrets\", \"value\": $(printf '%s' "$NOREPLY_HASH" | python3 -c 'import json,sys; print(json.dumps(sys.stdin.read().strip()))")}]" 2>&1)
+if echo "$RESULT" | grep -q "error"; then
+    log "noreply password set note: $RESULT"
+else
+    success "noreply@${domain} password set (use for Nextcloud SMTP)."
+fi
+
 ### --- POST-DEPLOY: Nextcloud OIDC Configuration ---
 
 log "Waiting for Nextcloud container to be ready..."
@@ -450,10 +481,22 @@ log "Setting OIDC as the default login method..."
 docker exec --user www-data nextcloud php occ config:app:set --value=0 user_oidc allow_multiple_user_backends
 success "Nextcloud OIDC configuration complete."
 
-echo "Setting up Nextcloud apps..."
+log "Setting up Nextcloud apps..."
 docker exec --user www-data nextcloud php occ app:disable twofactor_totp
 docker exec --user www-data nextcloud php occ app:enable files_accesscontrol files_retention calendar richdocumentscode contacts mail richdocuments deck groupfolders whiteboard collectives tables
+success "Nextcloud apps setup complete."
 
+log "Configuring Nextcloud to send mail via noreply@${domain} (Stalwart SMTP)..."
+docker exec --user www-data nextcloud php occ config:system:set mail_smtpmode --value=smtp
+docker exec --user www-data nextcloud php occ config:system:set mail_smtphost --value=stalwart-mail
+docker exec --user www-data nextcloud php occ config:system:set mail_smtpport --value=465 --type=integer
+docker exec --user www-data nextcloud php occ config:system:set mail_smtpsecure --value=ssl
+docker exec --user www-data nextcloud php occ config:system:set mail_smtpauth --value=1 --type=integer
+docker exec --user www-data nextcloud php occ config:system:set mail_smtpname --value="noreply@${domain}"
+docker exec --user www-data nextcloud php occ config:system:set mail_smtppassword --value="$NOREPLY_PASS"
+docker exec --user www-data nextcloud php occ config:system:set mail_from_address --value=noreply
+docker exec --user www-data nextcloud php occ config:system:set mail_domain --value="${domain}"
+success "Nextcloud outgoing mail set to noreply@${domain}."
 
 ### --- DNS Records ---
 

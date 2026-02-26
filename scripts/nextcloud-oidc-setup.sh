@@ -67,6 +67,21 @@ docker exec --user www-data nextcloud php occ config:app:set --value=0 user_oidc
 # Mail app: default account for Stalwart so users get mail.DOMAIN pre-configured
 [ -f "./scripts/nextcloud-mail-default.sh" ] && ./scripts/nextcloud-mail-default.sh || true
 
+# Optional: configure system SMTP if noreply password is set (e.g. after creating noreply in Stalwart)
+if [ -n "${NOREPLY_MAIL_PASSWORD:-}" ]; then
+    echo "Configuring Nextcloud outgoing mail (noreply@${DOMAIN})..."
+    docker exec --user www-data nextcloud php occ config:system:set mail_smtpmode --value=smtp
+    docker exec --user www-data nextcloud php occ config:system:set mail_smtphost --value=stalwart-mail
+    docker exec --user www-data nextcloud php occ config:system:set mail_smtpport --value=465 --type=integer
+    docker exec --user www-data nextcloud php occ config:system:set mail_smtpsecure --value=ssl
+    docker exec --user www-data nextcloud php occ config:system:set mail_smtpauth --value=1 --type=integer
+    docker exec --user www-data nextcloud php occ config:system:set mail_smtpname --value="noreply@${DOMAIN}"
+    docker exec --user www-data nextcloud php occ config:system:set mail_smtppassword --value="$NOREPLY_MAIL_PASSWORD"
+    docker exec --user www-data nextcloud php occ config:system:set mail_from_address --value=noreply
+    docker exec --user www-data nextcloud php occ config:system:set mail_domain --value="${DOMAIN}"
+    echo "Nextcloud outgoing mail set to noreply@${DOMAIN}."
+fi
+
 echo ""
 echo "Nextcloud OIDC configuration done."
 echo ""
