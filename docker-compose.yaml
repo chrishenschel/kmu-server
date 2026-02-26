@@ -164,10 +164,8 @@ services:
       - ./stalwart/data:/opt/stalwart
     ports:
       - "25:25" # SMTP
-      - "465:465" # SMTPS (SMTP über SSL/TLS)
-      - "993:993" # IMAPS (IMAP über SSL/TLS)
-      #- "8080:8080" # Stalwart Web-Admin-Oberfläche (HTTP)
-      #- "443:443"   # HTTPS für Web-Admin-Oberfläche
+      - "465:465" # SMTPS
+      - "993:993" # IMAPS
     depends_on:
       postgres:
         condition: service_healthy

@@ -2,61 +2,27 @@
 bind = "[::]:25"
 protocol = "smtp"
 
-[server.listener.submission]
-bind = "[::]:587"
-protocol = "smtp"
-
-[server.listener.submissions]
-bind = "[::]:465"
-protocol = "smtp"
-tls.implicit = true
-
-[server.listener.imap]
-bind = "[::]:143"
-protocol = "imap"
-
-[server.listener.imaptls]
-bind = "[::]:993"
-protocol = "imap"
-tls.implicit = true
-
-[server.listener.pop3]
-bind = "[::]:110"
-protocol = "pop3"
-
-[server.listener.pop3s]
-bind = "[::]:995"
-protocol = "pop3"
-tls.implicit = true
-
-[server.listener.sieve]
-bind = "[::]:4190"
-protocol = "managesieve"
-
-[server.listener.https]
-protocol = "http"
-bind = "[::]:443"
-tls.implicit = true
-
 [server.listener.http]
-bind = [ "0.0.0.0:8080" ]
+bind = ["0.0.0.0:8080"]
 protocol = "http"
 url = "https://mail.__DOMAIN__"
 use-proxy-headers = true
 
 [storage]
-data = "postgres"      # Store metadata (folders, flags, tags) in SQL
-directory = "postgres" # Store user accounts in SQL
-blob = "fs"            # Store actual email bodies as files on disk
-fts = "rocksdb"        # Keep Search Index in RocksDB (it is fast and disposable)
-lookup = "rocksdb"     # Keep temporary lookups fast in RocksDB
+data = "postgres"
+directory = "postgres"
+blob = "fs"
+fts = "rocksdb"
+lookup = "rocksdb"
 
-# Define the Postgres connection
 [store.postgres]
 type = "sql"
-url = "postgres://postgres:__PG_PASS__@postgres:5432/stalwart"
+host = "postgres"
+port = 5432
+database = "stalwart"
+user = "postgres"
+password = "__PG_PASS__"
 
-# Define the File System connection for Blobs
 [store.fs]
 type = "fs"
 path = "/opt/stalwart/blobs"
@@ -80,7 +46,6 @@ ansi = false
 enable = true
 
 [session]
-# Add "oidc" to the list. "plain" is kept for standard IMAP/SMTP clients.
 auth-mechanisms = ["plain", "oidc"]
 
 [directory.authentik]
