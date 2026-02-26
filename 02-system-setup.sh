@@ -357,35 +357,50 @@ else
     success "DKIM key generated for $domain."
 fi
 
-log "Creating noreply@${domain} mail account in Stalwart (for Nextcloud outgoing mail)..."
+log "Creating noreply@${domain} mail account (in Authentik; Stalwart uses LDAP) for Nextcloud outgoing mail..."
 NOREPLY_PASS=$(openssl rand -hex 16)
-echo "NOREPLY_EMAIL=noreply@${domain}" >> .env
-echo "NOREPLY_EMAIL_PASS=$NOREPLY_PASS" >> .env
 export NOREPLY_PASS
-RESULT=$(curl -ks -X POST \
-    -u "admin:$password" \
-    "$STALWART_URL/api/principal" \
-    -H "Content-Type: application/json" \
-    -d "{\"type\": \"individual\", \"name\": \"noreply\", \"emails\": [\"noreply@$domain\"]}" 2>&1)
-if echo "$RESULT" | grep -q "error"; then
-    if echo "$RESULT" | grep -qi "already exists"; then
-        log "noreply principal already exists, setting password only."
+[ -f .env ] && set -a && source .env && set +a
+if [ -z "${AUTHENTIK_BOOTSTRAP_TOKEN:-}" ]; then
+    log "AUTHENTIK_BOOTSTRAP_TOKEN not set, skipping noreply creation."
+else
+    AUTH_URL="https://auth.${domain}"
+    CREATE_RESULT=$(curl -ks -X POST \
+        -H "Authorization: Bearer $AUTHENTIK_BOOTSTRAP_TOKEN" \
+        -H "Content-Type: application/json" \
+        -d "{\"username\": \"noreply\", \"name\": \"noreply\", \"email\": \"noreply@$domain\", \"path\": \"users\", \"type\": \"internal\", \"is_active\": true}" \
+        "$AUTH_URL/api/v3/core/users/" 2>&1)
+    if echo "$CREATE_RESULT" | grep -q '"pk"'; then
+        NOREPLY_PK=$(echo "$CREATE_RESULT" | python3 -c "import sys,json; print(json.load(sys.stdin).get('pk',''))")
+        if [ -n "$NOREPLY_PK" ]; then
+            PW_RESULT=$(curl -ks -X POST \
+                -H "Authorization: Bearer $AUTHENTIK_BOOTSTRAP_TOKEN" \
+                -H "Content-Type: application/json" \
+                -d "{\"password\": \"$NOREPLY_PASS\"}" \
+                "$AUTH_URL/api/v3/core/users/$NOREPLY_PK/set_password/" 2>&1)
+            if [ "${PW_RESULT}" = "" ] || echo "$PW_RESULT" | grep -q "204\|200"; then
+                success "noreply@${domain} created in Authentik (LDAP -> Stalwart)."
+            else
+                log "noreply set_password note: $PW_RESULT"
+            fi
+        else
+            log "Could not get noreply user pk from response."
+        fi
+    elif echo "$CREATE_RESULT" | grep -qi "unique\|already exists"; then
+        log "noreply user already exists in Authentik; reusing NOREPLY_MAIL_PASSWORD from .env if set."
+        [ -f .env ] && set -a && source .env && set +a
+        NOREPLY_PASS="${NOREPLY_MAIL_PASSWORD:-$NOREPLY_PASS}"
     else
-        log "noreply creation note: $RESULT"
+        log "noreply creation note: $CREATE_RESULT"
     fi
-else
-    success "noreply principal created."
 fi
-NOREPLY_HASH=$(python3 -c 'import crypt,os; print(crypt.crypt(os.environ["NOREPLY_PASS"], crypt.mksalt(crypt.METHOD_SHA512)))')
-RESULT=$(curl -ks -X PATCH \
-    -u "admin:$password" \
-    "$STALWART_URL/api/principal/noreply" \
-    -H "Content-Type: application/json" \
-    -d "[{\"action\": \"set\", \"field\": \"secrets\", \"value\": $(printf '%s' "$NOREPLY_HASH" | python3 -c 'import json,sys; print(json.dumps(sys.stdin.read().strip()))")}]" 2>&1)
-if echo "$RESULT" | grep -q "error"; then
-    log "noreply password set note: $RESULT"
+grep -q '^NOREPLY_EMAIL=' .env 2>/dev/null || echo "NOREPLY_EMAIL=noreply@${domain}" >> .env
+# Only persist password when we actually set it (created user); avoid appending unknown password when user already exists
+if echo "$CREATE_RESULT" 2>/dev/null | grep -q '"pk"'; then
+    grep -q '^NOREPLY_MAIL_PASSWORD=' .env 2>/dev/null || echo "NOREPLY_MAIL_PASSWORD=$NOREPLY_PASS" >> .env
 else
-    success "noreply@${domain} password set (use for Nextcloud SMTP)."
+    [ -f .env ] && set -a && source .env && set +a
+    NOREPLY_PASS="${NOREPLY_MAIL_PASSWORD:-$NOREPLY_PASS}"
 fi
 
 ### --- POST-DEPLOY: Nextcloud OIDC Configuration ---
