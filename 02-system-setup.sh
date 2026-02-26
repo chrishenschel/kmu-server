@@ -212,8 +212,6 @@ sed -i \
 
 sed -i \
     -e "s|__PG_PASS__|$PG_PASS|g" \
-    -e "s|__CLIENT_ID__|$STALWART_CLIENT_ID|g" \
-    -e "s|__CLIENT_SECRET__|$STALWART_CLIENT_SECRET|g" \
     -e "s|__DOMAIN__|$domain|g" \
     "./stalwart/data/etc/config.toml"
 

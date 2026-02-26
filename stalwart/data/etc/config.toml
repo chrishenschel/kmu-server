@@ -10,7 +10,7 @@ use-proxy-headers = true
 
 [storage]
 data = "postgres"
-directory = "postgres"
+directory = "internal"
 blob = "fs"
 fts = "rocksdb"
 lookup = "rocksdb"
@@ -57,10 +57,8 @@ auth-mechanisms = ["plain", "oidc"]
 [directory.authentik]
 type = "oidc"
 timeout = "15s"
-client-id = "__CLIENT_ID__"
-client-secret = "__CLIENT_SECRET__"
-issuer-url = "https://auth.__DOMAIN__/application/o/stalwart-mail/"
-create-not-found = true
+endpoint.url = "https://auth.__DOMAIN__/application/o/userinfo/"
+endpoint.method = "userinfo"
 
 [directory.authentik.fields]
 username = "preferred_username"
