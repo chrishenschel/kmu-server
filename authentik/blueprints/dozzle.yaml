@@ -10,7 +10,6 @@ entries:
     identifiers:
       name: Dozzle Proxy
     attrs:
-      # "Forward Auth" mode means Caddy handles the traffic, Authentik just says Yes/No
       mode: forward_single
       external_host: https://logs.__DOMAIN__
       authorization_flow: !Find [authentik_flows.flow, [slug, "default-provider-authorization-implicit-consent"]]
@@ -27,4 +26,14 @@ entries:
       slug: dozzle-logs
       provider: !KeyOf dozzle-provider
       policy_engine_mode: any
+    state: present
+
+  # 3. Link provider to the Embedded Outpost
+  - model: authentik_outposts.outpost
+    identifiers:
+      name: "authentik Embedded Outpost"
+    attrs:
+      type: proxy
+      providers:
+        - !KeyOf dozzle-provider
     state: present
