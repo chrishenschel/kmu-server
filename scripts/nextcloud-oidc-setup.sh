@@ -36,6 +36,9 @@ docker exec --user www-data nextcloud php occ config:system:set trusted_proxies 
 echo "Setting allow_local_remote_servers..."
 docker exec --user www-data nextcloud php occ config:system:set allow_local_remote_servers --value=true --type=boolean
 
+echo "Setting default language to German..."
+docker exec --user www-data nextcloud php occ config:system:set default_language --value=de
+
 echo "Ensuring user_oidc app is installed..."
 docker exec --user www-data nextcloud php occ app:enable user_oidc 2>/dev/null || \
     docker exec --user www-data nextcloud php occ app:install user_oidc
@@ -61,6 +64,9 @@ fi
 echo "Setting OIDC as default login..."
 docker exec --user www-data nextcloud php occ config:app:set --value=0 user_oidc allow_multiple_user_backends
 
+# Mail app: default account for Stalwart so users get mail.DOMAIN pre-configured
+[ -f "./scripts/nextcloud-mail-default.sh" ] && ./scripts/nextcloud-mail-default.sh || true
+
 echo ""
 echo "Nextcloud OIDC configuration done."
 echo ""
@@ -71,3 +77,8 @@ echo ""
 echo "If login still fails, check:"
 echo "  - Nextcloud log: docker exec nextcloud cat /var/www/html/data/nextcloud.log"
 echo "  - Browser DevTools (F12) Network tab when clicking 'OpenID Connect' login"
+
+
+echo "Setting up Nextcloud apps..."
+docker exec --user www-data nextcloud php occ app:disable twofactor_totp
+docker exec --user www-data nextcloud php occ app:enable files_accesscontrol files_retention calendar richdocumentscode contacts mail richdocuments deck groupfolders whiteboard collectives tables

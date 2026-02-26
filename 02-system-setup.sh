@@ -420,6 +420,9 @@ docker exec --user www-data nextcloud php occ config:system:set trusted_proxies 
 log "Allowing local remote servers (needed for Docker-internal OIDC discovery)..."
 docker exec --user www-data nextcloud php occ config:system:set allow_local_remote_servers --value=true --type=boolean
 
+log "Setting default language to German..."
+docker exec --user www-data nextcloud php occ config:system:set default_language --value=de
+
 log "Installing OpenID Connect user backend app..."
 docker exec --user www-data nextcloud php occ app:install user_oidc
 success "user_oidc app installed."
