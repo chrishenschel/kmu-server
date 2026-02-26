@@ -34,6 +34,8 @@ entries:
       redirect_uris:
         - matching_mode: strict
           url: https://cloud.__DOMAIN__/apps/user_oidc/code
+        - matching_mode: strict
+          url: https://cloud.__DOMAIN__/index.php/apps/user_oidc/code
       token_validity: hours=1
       sub_mode: user_uuid
       signing_key: !Find [authentik_crypto.certificatekeypair, [name, "authentik Self-signed Certificate"]]

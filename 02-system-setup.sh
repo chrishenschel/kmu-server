@@ -235,12 +235,17 @@ sed -i \
 # CRITICAL: Strip CRLF (\r) line endings from all blueprints to ensure Authentik can parse them
 sed -i 's/\r$//' ./authentik/blueprints/*.yaml
 
+# Nextcloud: config/data/apps/theme must be writable by www-data (uid 33) inside the container
+log "Setting Nextcloud directory permissions for www-data (uid 33)..."
+mkdir -p nextcloud/config nextcloud/data nextcloud/apps nextcloud/theme
+chown -R 33:33 nextcloud/config nextcloud/data nextcloud/apps nextcloud/theme
+success "Nextcloud directories ready."
 
 docker compose up -d
 
 ### --- POST-DEPLOY: LDAP Outpost Token + Stalwart Admin Promotion ---
 
-log "Waiting for Authentik to be ready and blueprints to be applied..."
+log "Waiting for Authentik to be ready and blueprints to be applied (this might take a while)..."
 
 ATTEMPT=0
 while true; do
@@ -347,19 +352,57 @@ fi
 
 ### --- POST-DEPLOY: Nextcloud OIDC Configuration ---
 
-log "Waiting for Nextcloud to complete initial setup..."
+log "Waiting for Nextcloud container to be ready..."
 ATTEMPT=0
 while true; do
     ATTEMPT=$((ATTEMPT + 1))
     if docker exec --user www-data nextcloud php occ status 2>/dev/null | grep -q "installed: true"; then
-        success "Nextcloud is ready."
+        success "Nextcloud is already installed."
+        break
+    fi
+    if docker exec --user www-data nextcloud php occ status 2>/dev/null | grep -q "installed: false"; then
+        log "Nextcloud is not installed. Removing partial config so install command is available..."
+        docker exec nextcloud rm -f /var/www/html/config/config.php /var/www/html/config/autoconfig.php 2>/dev/null || true
+        sleep 2
+        if docker exec --user www-data nextcloud php occ maintenance:install --help &>/dev/null; then
+            log "Running maintenance:install..."
+            docker exec --user www-data nextcloud php occ maintenance:install \
+                --database=pgsql \
+                --database-name=nextcloud \
+                --database-user=postgres \
+                --database-pass="$PG_PASS" \
+                --database-host=postgres \
+                --admin-user="$username" \
+                --admin-pass="$password" \
+                --data-dir=/var/www/html/data
+            success "Nextcloud installed."
+        else
+            log "Install command still not available. Triggering install via container entrypoint (restart)..."
+            docker compose restart nextcloud
+            log "Waiting for Nextcloud to install (entrypoint runs on start)..."
+            for i in $(seq 1 60); do
+                sleep 10
+                if docker exec --user www-data nextcloud php occ status 2>/dev/null | grep -q "installed: true"; then
+                    success "Nextcloud installed via entrypoint."
+                    break
+                fi
+                log "  Waiting... ($i/60)"
+            done
+        fi
+        if docker exec --user www-data nextcloud php occ status 2>/dev/null | grep -q "installed: true"; then
+            log "Configuring trusted domain and overwrite URL..."
+            docker exec --user www-data nextcloud php occ config:system:set trusted_domains 0 --value="cloud.${domain}"
+            docker exec --user www-data nextcloud php occ config:system:set overwriteprotocol --value=https
+            docker exec --user www-data nextcloud php occ config:system:set overwrite.cli.url --value="https://cloud.${domain}"
+            success "Nextcloud base config set."
+        fi
         break
     fi
     if [ $ATTEMPT -ge 60 ]; then
         error "Nextcloud did not become ready after 60 attempts. Skipping OIDC config."
         break
     fi
-    log "  Attempt $ATTEMPT - Nextcloud not ready yet, waiting 10s..."
+    log "  Attempt $ATTEMPT - Nextcloud container not ready yet, waiting 10s..."
     sleep 10
 done
 
