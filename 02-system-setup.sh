@@ -450,20 +450,26 @@ log "Setting OIDC as the default login method..."
 docker exec --user www-data nextcloud php occ config:app:set --value=0 user_oidc allow_multiple_user_backends
 success "Nextcloud OIDC configuration complete."
 
+echo "Setting up Nextcloud apps..."
+docker exec --user www-data nextcloud php occ app:disable twofactor_totp
+docker exec --user www-data nextcloud php occ app:enable files_accesscontrol files_retention calendar richdocumentscode contacts mail richdocuments deck groupfolders whiteboard collectives tables
+
+
 ### --- DNS Records ---
 
 log "Fetching recommended DNS records from Stalwart..."
 DNS_JSON=$(curl -ks -u "admin:$password" "$STALWART_URL/api/dns/records/$domain" 2>&1)
 if echo "$DNS_JSON" | python3 -c "import sys,json; json.load(sys.stdin)['data']" >/dev/null 2>&1; then
-    echo ""
-    echo "============================================"
-    echo "  DNS RECORDS TO ADD FOR $domain"
-    echo "============================================"
-    echo ""
-    echo "1. MX Record:"
-    echo "   Type: MX | Host: @ | Value: mail.$domain | Priority: 10"
-    echo ""
-    echo "$DNS_JSON" | python3 -c "
+    {
+        echo ""
+        echo "============================================"
+        echo "  DNS RECORDS TO ADD FOR $domain"
+        echo "============================================"
+        echo ""
+        echo "1. MX Record:"
+        echo "   Type: MX | Host: @ | Value: mail.$domain | Priority: 10"
+        echo ""
+        echo "$DNS_JSON" | python3 -c "
 import sys, json
 records = json.load(sys.stdin)['data']
 i = 2
@@ -475,7 +481,8 @@ for r in records:
     print()
     i += 1
 "
-    echo "============================================"
+        echo "============================================"
+    } | tee dns-config.txt
 fi
 
 success "Setup complete! All services are running."

@@ -77,8 +77,3 @@ echo ""
 echo "If login still fails, check:"
 echo "  - Nextcloud log: docker exec nextcloud cat /var/www/html/data/nextcloud.log"
 echo "  - Browser DevTools (F12) Network tab when clicking 'OpenID Connect' login"
-
-
-echo "Setting up Nextcloud apps..."
-docker exec --user www-data nextcloud php occ app:disable twofactor_totp
-docker exec --user www-data nextcloud php occ app:enable files_accesscontrol files_retention calendar richdocumentscode contacts mail richdocuments deck groupfolders whiteboard collectives tables

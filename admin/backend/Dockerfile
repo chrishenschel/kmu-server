@@ -2,8 +2,7 @@ FROM python:3.12-slim
 
 WORKDIR /app
 
-# Install Docker CLI so we can run "docker exec" to create Nextcloud Mail accounts
-RUN apt-get update && apt-get install -y --no-install-recommends docker.io && rm -rf /var/lib/apt/lists/*
+# Docker socket is mounted at runtime; we use the Docker Python SDK (no CLI needed)
 
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt

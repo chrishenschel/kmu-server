@@ -9,6 +9,7 @@ rm -rf ./authentic/
 rm -rf ./postgres/
 rm -rf ./nextcloud/
 rm -rf ./static/
+rm dns-config.txt
 docker volume rm infra_synapse_data
 
 git stash && git pull && chmod a+x dev-reset-install.sh && chmod a+x 02-system-setup.sh

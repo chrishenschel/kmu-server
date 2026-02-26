@@ -4,9 +4,9 @@ Protected by Authentik forward auth; only admins should have access.
 """
 import os
 import ssl
-import subprocess
 from contextlib import asynccontextmanager
 
+import docker
 import httpx
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
@@ -41,32 +41,27 @@ def stalwart_auth():
 
 
 def create_nextcloud_mail_account(uid: str, email: str, password: str) -> tuple[bool, str]:
-    """Run the create_mail_account.php script inside the Nextcloud container. Returns (success, message)."""
+    """Run the create_mail_account.php script inside the Nextcloud container via Docker API. Returns (success, message)."""
     mail_host = f"mail.{DOMAIN}" if DOMAIN else "localhost"
+    env = [
+        f"NC_MAIL_UID={uid}",
+        f"NC_MAIL_EMAIL={email}",
+        f"NC_MAIL_PASSWORD={password}",
+        f"NC_MAIL_HOST={mail_host}",
+    ]
+    cmd = ["php", "/usr/local/nextcloud-scripts/create_mail_account.php"]
     try:
-        r = subprocess.run(
-            [
-                "docker", "exec",
-                "-i",
-                "-e", f"NC_MAIL_UID={uid}",
-                "-e", f"NC_MAIL_EMAIL={email}",
-                "-e", f"NC_MAIL_HOST={mail_host}",
-                NEXTCLOUD_CONTAINER,
-                "php", "/usr/local/nextcloud-scripts/create_mail_account.php",
-            ],
-            input=password.encode("utf-8"),
-            capture_output=True,
-            timeout=30,
-        )
-        out = (r.stdout or b"").decode("utf-8", errors="replace").strip()
-        err = (r.stderr or b"").decode("utf-8", errors="replace").strip()
-        if r.returncode == 0:
+        client = docker.from_env()
+        container = client.containers.get(NEXTCLOUD_CONTAINER)
+        exit_code, output = container.exec_run(cmd, environment=env, user="www-data", workdir="/var/www/html")
+        out = (output or b"").decode("utf-8", errors="replace").strip()
+        if exit_code == 0:
             return True, "Nextcloud Mail account created."
-        return False, (err or out or f"Exit code {r.returncode}").strip()
-    except FileNotFoundError:
-        return False, "Docker CLI not available."
-    except subprocess.TimeoutExpired:
-        return False, "Timed out."
+        return False, out or f"Exit code {exit_code}"
+    except docker.errors.NotFound:
+        return False, f"Container '{NEXTCLOUD_CONTAINER}' not found."
+    except docker.errors.APIError as e:
+        return False, str(e)
     except Exception as e:
         return False, str(e)
 
