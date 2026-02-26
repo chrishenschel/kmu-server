@@ -44,6 +44,15 @@ element.__DOMAIN__ {
     reverse_proxy element:80
 }
 
+cloud.__DOMAIN__ {
+    redir /.well-known/carddav /remote.php/dav 301
+    redir /.well-known/caldav /remote.php/dav 301
+    redir /.well-known/webfinger /index.php/.well-known/webfinger 301
+    redir /.well-known/nodeinfo /index.php/.well-known/nodeinfo 301
+
+    reverse_proxy nextcloud:80
+}
+
 logs.__DOMAIN__ {
     # 1. FORWARD AUTH: Ask Authentik for permission
     # This sends the request to the internal Authentik server first.

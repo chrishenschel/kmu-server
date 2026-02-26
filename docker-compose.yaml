@@ -26,7 +26,7 @@ services:
     environment:
       POSTGRES_PASSWORD: "${PG_PASS}"
       POSTGRES_USER: postgres
-      POSTGRES_MULTIPLE_DATABASES: authentik,matrix,stalwart
+      POSTGRES_MULTIPLE_DATABASES: authentik,matrix,stalwart,nextcloud
     healthcheck:
       test: [ "CMD-SHELL", "pg_isready -U postgres" ]
       interval: 5s
@@ -188,6 +188,33 @@ services:
         condition: service_healthy
       authentik-ldap:
         condition: service_started
+    networks:
+      - caddy-proxy
+      - database
+
+  ## Nextcloud
+  nextcloud:
+    image: nextcloud:latest
+    container_name: nextcloud
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./nextcloud/apps:/var/www/html/custom_apps
+      - ./nextcloud/config:/var/www/html/config
+      - ./nextcloud/data:/var/www/html/data
+      - ./nextcloud/theme:/var/www/html/themes/nextcloud-theme
+    environment:
+      - NEXTCLOUD_ADMIN_USER=${USERNAME}
+      - NEXTCLOUD_ADMIN_PASSWORD=${PASSWORD}
+      - POSTGRES_DB=nextcloud
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=${PG_PASS}
+      - POSTGRES_HOST=postgres
+      - NEXTCLOUD_TRUSTED_DOMAINS=cloud.${DOMAIN}
+      - OVERWRITEPROTOCOL=https
+      - OVERWRITECLIURL=https://cloud.${DOMAIN}
     networks:
       - caddy-proxy
       - database

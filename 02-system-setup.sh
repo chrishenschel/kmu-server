@@ -219,6 +219,19 @@ sed -i \
     -e "s|__DOMAIN__|$domain|g" \
     "./authentik/blueprints/dozzle.yaml"
 
+# NEXTCLOUD
+NC_CLIENT_ID=$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9' | head -c 40)
+NC_CLIENT_SECRET=$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9' | head -c 60)
+
+echo "NC_CLIENT_ID=$NC_CLIENT_ID" >> .env
+echo "NC_CLIENT_SECRET=$NC_CLIENT_SECRET" >> .env
+
+sed -i \
+    -e "s|__NC_CLIENT_ID__|$NC_CLIENT_ID|g" \
+    -e "s|__NC_CLIENT_SECRET__|$NC_CLIENT_SECRET|g" \
+    -e "s|__DOMAIN__|$domain|g" \
+    "./authentik/blueprints/nextcloud.yaml"
+
 # CRITICAL: Strip CRLF (\r) line endings from all blueprints to ensure Authentik can parse them
 sed -i 's/\r$//' ./authentik/blueprints/*.yaml
 
@@ -331,6 +344,52 @@ if echo "$RESULT" | grep -q "error"; then
 else
     success "DKIM key generated for $domain."
 fi
+
+### --- POST-DEPLOY: Nextcloud OIDC Configuration ---
+
+log "Waiting for Nextcloud to complete initial setup..."
+ATTEMPT=0
+while true; do
+    ATTEMPT=$((ATTEMPT + 1))
+    if docker exec --user www-data nextcloud php occ status 2>/dev/null | grep -q "installed: true"; then
+        success "Nextcloud is ready."
+        break
+    fi
+    if [ $ATTEMPT -ge 60 ]; then
+        error "Nextcloud did not become ready after 60 attempts. Skipping OIDC config."
+        break
+    fi
+    log "  Attempt $ATTEMPT - Nextcloud not ready yet, waiting 10s..."
+    sleep 10
+done
+
+log "Allowing local remote servers (needed for Docker-internal OIDC discovery)..."
+docker exec --user www-data nextcloud php occ config:system:set allow_local_remote_servers --value=true --type=boolean
+
+log "Installing OpenID Connect user backend app..."
+docker exec --user www-data nextcloud php occ app:install user_oidc
+success "user_oidc app installed."
+
+log "Creating OIDC provider for Authentik..."
+docker exec --user www-data nextcloud php occ user_oidc:provider:create authentik \
+    --clientid="$NC_CLIENT_ID" \
+    --clientsecret="$NC_CLIENT_SECRET" \
+    --discoveryuri="https://auth.${domain}/application/o/nextcloud/.well-known/openid-configuration" \
+    --scope="email profile nextcloud openid" \
+    --mapping-uid="user_id" \
+    --mapping-display-name="name" \
+    --mapping-email="email" \
+    --mapping-quota="quota" \
+    --mapping-groups="groups" \
+    --unique-uid=0 \
+    --group-provisioning=1
+success "OIDC provider created."
+
+log "Setting OIDC as the default login method..."
+docker exec --user www-data nextcloud php occ config:app:set --value=0 user_oidc allow_multiple_user_backends
+success "Nextcloud OIDC configuration complete."
+
+### --- DNS Records ---
 
 log "Fetching recommended DNS records from Stalwart..."
 DNS_JSON=$(curl -ks -u "admin:$password" "$STALWART_URL/api/dns/records/$domain" 2>&1)
