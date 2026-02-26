@@ -29,6 +29,30 @@ except Exception:
 
         docker compose up -d authentik-ldap
         echo "LDAP outpost restarted with correct token."
+
+        # Promote setup user to Stalwart admin
+        source .env
+        STALWART_USER="${USERNAME}"
+        STALWART_ADMIN_PASS="${PASSWORD}"
+        STALWART_URL="https://mail.${DOMAIN}"
+
+        echo "Waiting for Stalwart to be ready..."
+        for i in $(seq 1 15); do
+            if curl -ksf "$STALWART_URL/healthz" >/dev/null 2>&1; then
+                break
+            fi
+            sleep 2
+        done
+
+        echo "Promoting $STALWART_USER to Stalwart admin..."
+        curl -ksf -X PATCH \
+            -u "admin:$STALWART_ADMIN_PASS" \
+            "$STALWART_URL/api/principal/$STALWART_USER" \
+            -H "Content-Type: application/json" \
+            -d "[{\"action\": \"set\", \"field\": \"roles\", \"value\": [\"admin\"]}]" && \
+            echo "User $STALWART_USER promoted to admin in Stalwart." || \
+            echo "WARNING: Could not promote $STALWART_USER. Do it manually via the Stalwart admin panel."
+
         exit 0
     fi
 

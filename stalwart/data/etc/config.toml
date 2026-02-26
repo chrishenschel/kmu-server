@@ -46,14 +46,15 @@ secret = "__BIND_PASSWORD__"
 method = "lookup"
 
 [directory.authentik.filter]
-name = "(&(objectClass=user)(uid=?))"
-email = "(&(objectClass=user)(|(mail=?)))"
+name = "(cn=?)"
+email = "(mail=?)"
 
 [directory.authentik.attributes]
-name = "uid"
+name = "cn"
 class = "objectClass"
 email = "mail"
 groups = ["memberOf"]
+secret-changed = "mail"
 
 [tracer.log]
 type = "log"
@@ -69,6 +70,10 @@ type = "stdout"
 level = "debug"
 ansi = true
 enable = true
+
+[authentication.fallback-admin]
+user = "admin"
+secret = "__BIND_PASSWORD__"
 
 [session]
 auth-mechanisms = ["plain"]
