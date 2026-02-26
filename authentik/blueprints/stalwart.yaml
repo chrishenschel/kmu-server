@@ -38,6 +38,7 @@ entries:
       name: "Stalwart LDAP Outpost"
     attrs:
       type: ldap
+      config: {}
       providers:
         - !KeyOf stalwart-ldap-provider
     state: present

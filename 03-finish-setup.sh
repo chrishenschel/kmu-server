@@ -31,14 +31,14 @@ except Exception:
         echo "LDAP outpost restarted with correct token."
 
         # Promote setup user to Stalwart admin
-        source .env
-        STALWART_USER="${USERNAME}"
-        STALWART_ADMIN_PASS="${PASSWORD}"
-        STALWART_URL="https://mail.${DOMAIN}"
+        STALWART_USER=$(grep '^USERNAME=' .env | cut -d= -f2-)
+        STALWART_ADMIN_PASS=$(grep '^PASSWORD=' .env | cut -d= -f2-)
+        STALWART_DOMAIN=$(grep '^DOMAIN=' .env | cut -d= -f2-)
+        STALWART_URL="https://mail.${STALWART_DOMAIN}"
 
         echo "Waiting for Stalwart to be ready..."
-        for i in $(seq 1 15); do
-            if curl -ksf "$STALWART_URL/healthz" >/dev/null 2>&1; then
+        for i in $(seq 1 30); do
+            if curl -ksf -o /dev/null "$STALWART_URL/login" 2>/dev/null; then
                 break
             fi
             sleep 2
