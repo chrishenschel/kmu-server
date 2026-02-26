@@ -5,6 +5,9 @@ GREEN='\033[0;32m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
+# Log file optional: set LOG_FILE to a path to append logs, or leave unset to only print
+LOG_FILE="${LOG_FILE:-/dev/null}"
+
 log() {
     echo -e "${BLUE}[INFO]${NC} $1" | tee -a "$LOG_FILE"
 }
@@ -414,7 +417,7 @@ docker exec --user www-data nextcloud php occ app:install user_oidc
 success "user_oidc app installed."
 
 log "Creating OIDC provider for Authentik..."
-docker exec --user www-data nextcloud php occ user_oidc:provider:create authentik \
+docker exec --user www-data nextcloud php occ user_oidc:provider authentik \
     --clientid="$NC_CLIENT_ID" \
     --clientsecret="$NC_CLIENT_SECRET" \
     --discoveryuri="https://auth.${domain}/application/o/nextcloud/.well-known/openid-configuration" \

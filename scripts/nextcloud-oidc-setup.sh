@@ -33,11 +33,11 @@ echo "Ensuring user_oidc app is installed..."
 docker exec --user www-data nextcloud php occ app:enable user_oidc 2>/dev/null || \
     docker exec --user www-data nextcloud php occ app:install user_oidc
 
-if docker exec --user www-data nextcloud php occ user_oidc:provider:list 2>/dev/null | grep -q "authentik"; then
+if docker exec --user www-data nextcloud php occ user_oidc:providers 2>/dev/null | grep -q "authentik"; then
     echo "Provider 'authentik' already exists. Skipping create (run provider:delete authentik first to recreate)."
 else
     echo "Creating OIDC provider 'authentik'..."
-    docker exec --user www-data nextcloud php occ user_oidc:provider:create authentik \
+    docker exec --user www-data nextcloud php occ user_oidc:provider authentik \
         --clientid="$NC_CLIENT_ID" \
         --clientsecret="$NC_CLIENT_SECRET" \
         --discoveryuri="https://auth.${DOMAIN}/application/o/nextcloud/.well-known/openid-configuration" \

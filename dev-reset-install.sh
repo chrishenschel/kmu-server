@@ -11,4 +11,4 @@ rm -rf ./nextcloud/
 rm -rf ./static/
 docker volume rm infra_synapse_data
 
-git stash && git pull && chmod a+x dev-reset-install.sh && chmod a+x 02-system-setup.sh && chmod a+x scripts/user-sync.sh
+git stash && git pull && chmod a+x dev-reset-install.sh && chmod a+x 02-system-setup.sh
