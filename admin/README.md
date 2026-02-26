@@ -4,10 +4,13 @@ Small web app for non-technical admins to manage users without touching Authenti
 
 ## What it does
 
-- **List users** – Shows all Authentik users (internal, active).
+- **List users** – Shows all Authentik users (internal, active) with an **Admin** indicator for users in the admin group.
 - **Add user** – Creates the user in Authentik (with password), creates their mailbox in Stalwart immediately (no wait for user-sync), and **optionally creates the Mail account in Nextcloud** with the same password so the user doesn’t have to type it again. The same password is used for:
   - Authentik / Nextcloud (OIDC) login
   - Mail (Stalwart) – and, if the optional helper runs, the Nextcloud Mail app account is already set with this password.
+- **Edit user** – Update display name, email, active status, and **Admin** (add/remove from the “authentik Admins” group).
+- **Change password** – Set a new password for a user in Authentik.
+- **Delete user** – Remove the user from Authentik (with confirmation).
 
 ## Access
 
@@ -18,7 +21,7 @@ Small web app for non-technical admins to manage users without touching Authenti
 
 1. Run the main setup script so the admin blueprint is applied (adds the Admin Panel app in Authentik and Caddy route).
 2. In Authentik: **Applications** → **Admin Panel** → **Policy / Group / User Bindings** → add a binding for the **authentik Admins** group (or your admin group) so only admins can open the panel.
-3. Ensure `.env` has `DOMAIN`, `AUTHENTIK_BOOTSTRAP_TOKEN`, `PASSWORD` (Stalwart admin). The admin container reads these from the compose environment.
+3. Ensure `.env` has `DOMAIN`, `AUTHENTIK_BOOTSTRAP_TOKEN`, `PASSWORD` (Stalwart admin). The admin container reads these from the compose environment. Optional: `AUTHENTIK_ADMIN_GROUP_NAME` (default `authentik Admins`) is the group used for the “Admin” toggle when editing users.
 
 ## Development
 

@@ -13,6 +13,19 @@
     table { width: 100%; border-collapse: collapse; }
     th, td { text-align: left; padding: 0.5rem 0.75rem; border-bottom: 1px solid #2d3748; }
     th { color: #a0aec0; font-weight: 600; }
+    .actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+    .actions button { padding: 0.35rem 0.6rem; font-size: 0.8rem; }
+    .actions button.secondary { background: #4a5568; }
+    .actions button.secondary:hover { background: #2d3748; }
+    .actions button.danger { background: #e53e3e; }
+    .actions button.danger:hover { background: #c53030; }
+    .badge { display: inline-block; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.75rem; }
+    .badge.admin { background: #2b6cb0; color: white; }
+    .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 10; align-items: center; justify-content: center; }
+    .modal.show { display: flex; }
+    .modal-content { background: #16213e; border-radius: 8px; padding: 1.5rem; max-width: 420px; width: 90%; }
+    .modal-content h3 { margin: 0 0 1rem 0; font-size: 1.1rem; }
+    .modal-actions { margin-top: 1rem; display: flex; gap: 0.5rem; justify-content: flex-end; }
     form { display: grid; gap: 0.75rem; max-width: 400px; }
     label { display: block; font-size: 0.875rem; color: #a0aec0; }
     input { width: 100%; padding: 0.5rem 0.75rem; border: 1px solid #2d3748; border-radius: 6px; background: #0f0f1a; color: #eee; }
@@ -56,11 +69,66 @@
     <p id="usersLoading" class="loading">Loading…</p>
     <table id="usersTable" style="display: none;">
       <thead>
-        <tr><th>Username</th><th>Name</th><th>Email</th></tr>
+        <tr><th>Username</th><th>Name</th><th>Email</th><th>Admin</th><th>Actions</th></tr>
       </thead>
       <tbody id="usersBody"></tbody>
     </table>
   </section>
+
+  <div id="editModal" class="modal">
+    <div class="modal-content">
+      <h3>Edit user</h3>
+      <form id="editUserForm">
+        <input type="hidden" id="editUuid">
+        <div style="margin-bottom: 0.75rem;">
+          <label for="editName">Display name</label>
+          <input id="editName" name="name">
+        </div>
+        <div style="margin-bottom: 0.75rem;">
+          <label for="editEmail">Email</label>
+          <input id="editEmail" name="email" type="email">
+        </div>
+        <div style="margin-bottom: 0.75rem;">
+          <label><input type="checkbox" id="editIsActive" name="is_active" checked> Active</label>
+        </div>
+        <div style="margin-bottom: 0.75rem;">
+          <label><input type="checkbox" id="editIsAdmin" name="is_admin"> Admin</label>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="secondary" id="editModalCancel">Cancel</button>
+          <button type="submit">Save</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="passwordModal" class="modal">
+    <div class="modal-content">
+      <h3>Change password</h3>
+      <form id="passwordForm">
+        <input type="hidden" id="passwordUuid">
+        <div style="margin-bottom: 0.75rem;">
+          <label for="newPassword">New password</label>
+          <input id="newPassword" name="password" type="password" required autocomplete="new-password">
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="secondary" id="passwordModalCancel">Cancel</button>
+          <button type="submit">Update password</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="deleteModal" class="modal">
+    <div class="modal-content">
+      <h3>Delete user</h3>
+      <p id="deleteConfirmText">Are you sure you want to delete this user?</p>
+      <div class="modal-actions">
+        <button type="button" class="secondary" id="deleteModalCancel">Cancel</button>
+        <button type="button" class="danger" id="deleteConfirmBtn">Delete</button>
+      </div>
+    </div>
+  </div>
 
   <script>
     const form = document.getElementById('addUserForm');
@@ -75,26 +143,147 @@
       formMessage.className = isError ? 'error' : 'success';
     }
 
+    function escapeHtml(s) {
+      const div = document.createElement('div');
+      div.textContent = s;
+      return div.innerHTML;
+    }
+
+    function actionButtons(u) {
+      return `
+        <div class="actions">
+          <button type="button" class="secondary" data-action="edit" data-uuid="${escapeHtml(u.uuid)}">Edit</button>
+          <button type="button" class="secondary" data-action="password" data-uuid="${escapeHtml(u.uuid)}">Password</button>
+          <button type="button" class="danger" data-action="delete" data-uuid="${escapeHtml(u.uuid)}" data-username="${escapeHtml(u.username)}">Delete</button>
+        </div>
+      `;
+    }
+
     async function loadUsers() {
       try {
         const r = await fetch('/api/users');
         if (!r.ok) throw new Error(r.status === 503 ? 'Backend not configured' : await r.text());
         const data = await r.json();
         usersBody.innerHTML = (data.users || []).map(u =>
-          `<tr><td>${escapeHtml(u.username)}</td><td>${escapeHtml(u.name)}</td><td>${escapeHtml(u.email)}</td></tr>`
+          `<tr>
+            <td>${escapeHtml(u.username)}</td>
+            <td>${escapeHtml(u.name)}</td>
+            <td>${escapeHtml(u.email)}</td>
+            <td>${u.is_admin ? '<span class="badge admin">Admin</span>' : '—'}</td>
+            <td>${actionButtons(u)}</td>
+          </tr>`
         ).join('');
         usersTable.style.display = 'table';
         usersLoading.style.display = 'none';
+        usersBody.querySelectorAll('[data-action="edit"]').forEach(btn => btn.addEventListener('click', openEditModal));
+        usersBody.querySelectorAll('[data-action="password"]').forEach(btn => btn.addEventListener('click', openPasswordModal));
+        usersBody.querySelectorAll('[data-action="delete"]').forEach(btn => btn.addEventListener('click', openDeleteModal));
       } catch (e) {
         usersLoading.textContent = 'Failed to load: ' + e.message;
       }
     }
 
-    function escapeHtml(s) {
-      const div = document.createElement('div');
-      div.textContent = s;
-      return div.innerHTML;
+    function openEditModal(e) {
+      const uuid = e.target.dataset.uuid;
+      fetch('/api/users/' + encodeURIComponent(uuid))
+        .then(r => r.ok ? r.json() : Promise.reject(r))
+        .then(user => {
+          document.getElementById('editUuid').value = user.uuid;
+          document.getElementById('editName').value = user.name || '';
+          document.getElementById('editEmail').value = user.email || '';
+          document.getElementById('editIsActive').checked = user.is_active !== false;
+          document.getElementById('editIsAdmin').checked = user.is_admin === true;
+          document.getElementById('editModal').classList.add('show');
+        })
+        .catch(() => setFormMessage('Failed to load user', true));
     }
+
+    function openPasswordModal(e) {
+      document.getElementById('passwordUuid').value = e.target.dataset.uuid;
+      document.getElementById('newPassword').value = '';
+      document.getElementById('passwordModal').classList.add('show');
+    }
+
+    function openDeleteModal(e) {
+      document.getElementById('deleteConfirmBtn').dataset.uuid = e.target.dataset.uuid;
+      document.getElementById('deleteConfirmText').textContent = 'Are you sure you want to delete user “‘ + e.target.dataset.username + '”? This cannot be undone.';
+      document.getElementById('deleteModal').classList.add('show');
+    }
+
+    document.getElementById('editModalCancel').addEventListener('click', () => document.getElementById('editModal').classList.remove('show'));
+    document.getElementById('passwordModalCancel').addEventListener('click', () => document.getElementById('passwordModal').classList.remove('show'));
+    document.getElementById('deleteModalCancel').addEventListener('click', () => document.getElementById('deleteModal').classList.remove('show'));
+
+    document.getElementById('editModal').addEventListener('click', e => { if (e.target.id === 'editModal') e.target.classList.remove('show'); });
+    document.getElementById('passwordModal').addEventListener('click', e => { if (e.target.id === 'passwordModal') e.target.classList.remove('show'); });
+    document.getElementById('deleteModal').addEventListener('click', e => { if (e.target.id === 'deleteModal') e.target.classList.remove('show'); });
+
+    document.getElementById('editUserForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const uuid = document.getElementById('editUuid').value;
+      const payload = {
+        name: document.getElementById('editName').value.trim(),
+        email: document.getElementById('editEmail').value.trim(),
+        is_active: document.getElementById('editIsActive').checked,
+        is_admin: document.getElementById('editIsAdmin').checked,
+      };
+      try {
+        const r = await fetch('/api/users/' + encodeURIComponent(uuid), {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        const data = await r.json().catch(() => ({}));
+        if (!r.ok) {
+          setFormMessage(data.detail || r.statusText || 'Update failed', true);
+          return;
+        }
+        document.getElementById('editModal').classList.remove('show');
+        setFormMessage(data.message || 'User updated.', false);
+        loadUsers();
+      } catch (err) {
+        setFormMessage(err.message || 'Request failed', true);
+      }
+    });
+
+    document.getElementById('passwordForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const uuid = document.getElementById('passwordUuid').value;
+      const password = document.getElementById('newPassword').value;
+      try {
+        const r = await fetch('/api/users/' + encodeURIComponent(uuid) + '/set-password', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ password }),
+        });
+        const data = await r.json().catch(() => ({}));
+        if (!r.ok) {
+          setFormMessage(data.detail || r.statusText || 'Password update failed', true);
+          return;
+        }
+        document.getElementById('passwordModal').classList.remove('show');
+        setFormMessage(data.message || 'Password updated.', false);
+      } catch (err) {
+        setFormMessage(err.message || 'Request failed', true);
+      }
+    });
+
+    document.getElementById('deleteConfirmBtn').addEventListener('click', async () => {
+      const uuid = document.getElementById('deleteConfirmBtn').dataset.uuid;
+      try {
+        const r = await fetch('/api/users/' + encodeURIComponent(uuid), { method: 'DELETE' });
+        const data = await r.json().catch(() => ({}));
+        if (!r.ok) {
+          setFormMessage(data.detail || r.statusText || 'Delete failed', true);
+          return;
+        }
+        document.getElementById('deleteModal').classList.remove('show');
+        setFormMessage(data.message || 'User deleted.', false);
+        loadUsers();
+      } catch (err) {
+        setFormMessage(err.message || 'Request failed', true);
+      }
+    });
 
     form.addEventListener('submit', async (e) => {
       e.preventDefault();

@@ -50,7 +50,7 @@ echo "AUTHENTIK_BOOTSTRAP_TOKEN=$AUTHENTIK_BOOTSTRAP_TOKEN" >> .env
 echo "AUTHENTIK_BOOTSTRAP_EMAIL=$AUTHENTIK_BOOTSTRAP_EMAIL" >> .env
 echo "DOMAIN=$domain" >> .env
 echo "USERNAME=$username" >> .env
-echo "USERFULLNAME=$userfullname" >> .env
+echo "USERFULLNAME=\"$userfullname\"" >> .env
 echo "PASSWORD=$password" >> .env
 
 # PASSWORD_HASH=$(python3 -c '

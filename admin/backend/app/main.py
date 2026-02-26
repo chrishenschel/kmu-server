@@ -24,6 +24,9 @@ STALWART_ADMIN_PASS = os.environ.get("STALWART_ADMIN_PASS", "")
 DOMAIN = os.environ.get("DOMAIN", "")
 NEXTCLOUD_CONTAINER = os.environ.get("NEXTCLOUD_CONTAINER_NAME", "nextcloud")
 
+# Authentik admin group name (used for "set as admin" toggle)
+ADMIN_GROUP_NAME = os.environ.get("AUTHENTIK_ADMIN_GROUP_NAME", "authentik Admins")
+
 # Skip TLS verify for internal services
 SSL_CTX = ssl.create_default_context()
 SSL_CTX.check_hostname = False
@@ -32,6 +35,66 @@ SSL_CTX.verify_mode = ssl.CERT_NONE
 
 def auth_headers():
     return {"Authorization": f"Bearer {AUTHENTIK_TOKEN}"}
+
+
+async def _get_user_by_uuid(client: httpx.AsyncClient, uuid: str) -> tuple[int | None, dict | None]:
+    """Return (pk, user_data) or (None, None) if not found."""
+    r = await client.get(
+        f"{AUTHENTIK_URL}/api/v3/core/users/",
+        params={"uuid": uuid, "page_size": 1},
+        headers=auth_headers(),
+    )
+    if r.status_code != 200:
+        return None, None
+    data = r.json()
+    results = data.get("results", [])
+    if not results:
+        return None, None
+    u = results[0]
+    return u.get("pk"), u
+
+
+async def _get_admin_group_uuid(client: httpx.AsyncClient) -> str | None:
+    """Return the uuid of the group named ADMIN_GROUP_NAME, or None."""
+    r = await client.get(
+        f"{AUTHENTIK_URL}/api/v3/core/groups/",
+        params={"search": ADMIN_GROUP_NAME, "page_size": 10},
+        headers=auth_headers(),
+    )
+    if r.status_code != 200:
+        return None
+    for g in r.json().get("results", []):
+        if g.get("name") == ADMIN_GROUP_NAME:
+            return g.get("uuid")
+    return None
+
+
+async def _get_admin_group_member_pks(client: httpx.AsyncClient) -> set[int]:
+    """Return set of user pks that are members of ADMIN_GROUP_NAME."""
+    out: set[int] = set()
+    r = await client.get(
+        f"{AUTHENTIK_URL}/api/v3/core/groups/",
+        params={"search": ADMIN_GROUP_NAME, "page_size": 10},
+        headers=auth_headers(),
+    )
+    if r.status_code != 200:
+        return out
+    for g in r.json().get("results", []):
+        if g.get("name") != ADMIN_GROUP_NAME:
+            continue
+        gd = await client.get(
+            f"{AUTHENTIK_URL}/api/v3/core/groups/{g['pk']}/",
+            headers=auth_headers(),
+        )
+        if gd.status_code != 200:
+            continue
+        members = gd.json().get("users") or gd.json().get("users_obj") or []
+        for m in members:
+            pk = m.get("pk") if isinstance(m, dict) else m
+            if pk is not None:
+                out.add(int(pk))
+        break
+    return out
 
 
 def stalwart_auth():
@@ -95,17 +158,29 @@ class UserCreate(BaseModel):
     password: str
 
 
+class UserUpdate(BaseModel):
+    name: str | None = None
+    email: str | None = None
+    is_active: bool | None = None
+    is_admin: bool | None = None
+
+
+class UserSetPassword(BaseModel):
+    password: str
+
+
 class UserOut(BaseModel):
     uuid: str
     username: str
     name: str
     email: str
     is_active: bool
+    is_admin: bool = False
 
 
 @app.get("/api/users")
 async def list_users():
-    """List users from Authentik (internal type, active)."""
+    """List users from Authentik (internal type, active). Includes is_admin from group membership."""
     if not AUTHENTIK_TOKEN:
         raise HTTPException(status_code=503, detail="AUTHENTIK_TOKEN not configured")
     async with httpx.AsyncClient(verify=SSL_CTX, timeout=15.0) as client:
@@ -114,18 +189,26 @@ async def list_users():
             params={"is_active": "true", "type": "internal", "page_size": 500},
             headers=auth_headers(),
         )
-    r.raise_for_status()
-    data = r.json()
-    users = [
-        UserOut(
-            uuid=u["uuid"],
-            username=u.get("username", ""),
-            name=u.get("name", ""),
-            email=u.get("email", ""),
-            is_active=u.get("is_active", True),
-        )
-        for u in data.get("results", [])
-    ]
+        r.raise_for_status()
+        data = r.json()
+        users_list = data.get("results", [])
+
+        # Resolve admin group and get member pks
+        admin_pks: set[int] = set()
+        if users_list:
+            admin_pks = await _get_admin_group_member_pks(client)
+
+        users = [
+            UserOut(
+                uuid=u["uuid"],
+                username=u.get("username", ""),
+                name=u.get("name", ""),
+                email=u.get("email", ""),
+                is_active=u.get("is_active", True),
+                is_admin=u.get("pk") in admin_pks if u.get("pk") is not None else False,
+            )
+            for u in users_list
+        ]
     return {"users": users}
 
 
@@ -212,6 +295,114 @@ async def create_user(body: UserCreate):
         + ("Nextcloud Mail account created with this password." if nc_ok else nc_msg),
         "user": {"username": username, "name": name, "email": email},
     }
+
+
+@app.get("/api/users/{uuid}")
+async def get_user(uuid: str):
+    """Get one user by uuid."""
+    if not AUTHENTIK_TOKEN:
+        raise HTTPException(status_code=503, detail="AUTHENTIK_TOKEN not configured")
+    async with httpx.AsyncClient(verify=SSL_CTX, timeout=15.0) as client:
+        pk, user = await _get_user_by_uuid(client, uuid)
+        if not user or pk is None:
+            raise HTTPException(status_code=404, detail="User not found")
+        admin_pks = await _get_admin_group_member_pks(client)
+        return {
+            "uuid": user["uuid"],
+            "username": user.get("username", ""),
+            "name": user.get("name", ""),
+            "email": user.get("email", ""),
+            "is_active": user.get("is_active", True),
+            "is_admin": pk in admin_pks,
+        }
+
+
+@app.patch("/api/users/{uuid}")
+async def update_user(uuid: str, body: UserUpdate):
+    """Update user details and/or admin status."""
+    if not AUTHENTIK_TOKEN:
+        raise HTTPException(status_code=503, detail="AUTHENTIK_TOKEN not configured")
+    async with httpx.AsyncClient(verify=SSL_CTX, timeout=15.0) as client:
+        pk, user = await _get_user_by_uuid(client, uuid)
+        if not user or pk is None:
+            raise HTTPException(status_code=404, detail="User not found")
+
+        payload: dict = {}
+        if body.name is not None:
+            payload["name"] = body.name
+        if body.email is not None:
+            payload["email"] = body.email
+        if body.is_active is not None:
+            payload["is_active"] = body.is_active
+
+        if payload:
+            pr = await client.patch(
+                f"{AUTHENTIK_URL}/api/v3/core/users/{pk}/",
+                json=payload,
+                headers={**auth_headers(), "Content-Type": "application/json"},
+            )
+            if pr.status_code not in (200, 204):
+                raise HTTPException(status_code=pr.status_code, detail=pr.text)
+
+        if body.is_admin is not None:
+            admin_uuid = await _get_admin_group_uuid(client)
+            if not admin_uuid:
+                raise HTTPException(status_code=503, detail=f"Admin group '{ADMIN_GROUP_NAME}' not found")
+            if body.is_admin:
+                ar = await client.post(
+                    f"{AUTHENTIK_URL}/api/v3/core/groups/{admin_uuid}/add_user/",
+                    json={"pk": pk},
+                    headers={**auth_headers(), "Content-Type": "application/json"},
+                )
+            else:
+                ar = await client.post(
+                    f"{AUTHENTIK_URL}/api/v3/core/groups/{admin_uuid}/remove_user/",
+                    json={"pk": pk},
+                    headers={**auth_headers(), "Content-Type": "application/json"},
+                )
+            if ar.status_code not in (200, 204):
+                raise HTTPException(status_code=ar.status_code, detail=ar.text or "Failed to update admin status")
+
+    return {"ok": True, "message": "User updated."}
+
+
+@app.delete("/api/users/{uuid}")
+async def delete_user(uuid: str):
+    """Delete user from Authentik."""
+    if not AUTHENTIK_TOKEN:
+        raise HTTPException(status_code=503, detail="AUTHENTIK_TOKEN not configured")
+    async with httpx.AsyncClient(verify=SSL_CTX, timeout=15.0) as client:
+        pk, _ = await _get_user_by_uuid(client, uuid)
+        if pk is None:
+            raise HTTPException(status_code=404, detail="User not found")
+        r = await client.delete(
+            f"{AUTHENTIK_URL}/api/v3/core/users/{pk}/",
+            headers=auth_headers(),
+        )
+        if r.status_code not in (200, 204):
+            raise HTTPException(status_code=r.status_code, detail=r.text)
+    return {"ok": True, "message": "User deleted."}
+
+
+@app.post("/api/users/{uuid}/set-password")
+async def set_password(uuid: str, body: UserSetPassword):
+    """Change user password in Authentik."""
+    if not AUTHENTIK_TOKEN:
+        raise HTTPException(status_code=503, detail="AUTHENTIK_TOKEN not configured")
+    if not body.password:
+        raise HTTPException(status_code=400, detail="Password required")
+    async with httpx.AsyncClient(verify=SSL_CTX, timeout=15.0) as client:
+        pk, _ = await _get_user_by_uuid(client, uuid)
+        if pk is None:
+            raise HTTPException(status_code=404, detail="User not found")
+        r = await client.post(
+            f"{AUTHENTIK_URL}/api/v3/core/users/{pk}/set_password/",
+            json={"password": body.password},
+            headers={**auth_headers(), "Content-Type": "application/json"},
+        )
+        if r.status_code not in (200, 204):
+            raise HTTPException(status_code=r.status_code, detail=r.text)
+    return {"ok": True, "message": "Password updated."}
 
 
 @app.get("/api/health")
