@@ -54,22 +54,31 @@ cloud.__DOMAIN__ {
 }
 
 logs.__DOMAIN__ {
-    # 1. FORWARD AUTH: Ask Authentik for permission
-    # This sends the request to the internal Authentik server first.
-    # If not logged in, Authentik redirects them to the login page.
-    forward_auth authentik-server:9000 {
-        uri /outpost.goauthentik.io/auth/caddy
-        copy_headers X-Authentik-Username X-Authentik-Groups X-Authentik-Email X-Authentik-Name X-Authentik-Uid X-Authentik-Jwt X-Authentik-Meta-Jwks X-Authentik-Meta-Outpost X-Authentik-Meta-Provider X-Authentik-Meta-App X-Authentik-Meta-Version
+    # Outpost path (callback, etc.) must be proxied to Authentik so login redirect works
+    handle /outpost.goauthentik.io/* {
+        reverse_proxy authentik-server:9000
     }
-
-    # 2. If allowed, show the logs
-    reverse_proxy dozzle:8080
+    handle {
+        # 1. FORWARD AUTH: Ask Authentik for permission
+        forward_auth authentik-server:9000 {
+            uri /outpost.goauthentik.io/auth/caddy
+            copy_headers X-Authentik-Username X-Authentik-Groups X-Authentik-Email X-Authentik-Name X-Authentik-Uid X-Authentik-Jwt X-Authentik-Meta-Jwks X-Authentik-Meta-Outpost X-Authentik-Meta-Provider X-Authentik-Meta-App X-Authentik-Meta-Version
+        }
+        # 2. If allowed, show the logs
+        reverse_proxy dozzle:8080
+    }
 }
 
 admin.__DOMAIN__ {
-    forward_auth authentik-server:9000 {
-        uri /outpost.goauthentik.io/auth/caddy
-        copy_headers X-Authentik-Username X-Authentik-Groups X-Authentik-Email X-Authentik-Name X-Authentik-Uid X-Authentik-Jwt X-Authentik-Meta-Jwks X-Authentik-Meta-Outpost X-Authentik-Meta-Provider X-Authentik-Meta-App X-Authentik-Meta-Version
+    # Outpost path (callback, etc.) must be proxied to Authentik so login redirect works
+    handle /outpost.goauthentik.io/* {
+        reverse_proxy authentik-server:9000
     }
-    reverse_proxy admin-panel:8000
+    handle {
+        forward_auth authentik-server:9000 {
+            uri /outpost.goauthentik.io/auth/caddy
+            copy_headers X-Authentik-Username X-Authentik-Groups X-Authentik-Email X-Authentik-Name X-Authentik-Uid X-Authentik-Jwt X-Authentik-Meta-Jwks X-Authentik-Meta-Outpost X-Authentik-Meta-Provider X-Authentik-Meta-App X-Authentik-Meta-Version
+        }
+        reverse_proxy admin-panel:8000
+    }
 }
