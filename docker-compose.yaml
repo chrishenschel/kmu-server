@@ -168,8 +168,12 @@ services:
       - "993:993" # IMAPS (IMAP über SSL/TLS)
       #- "8080:8080" # Stalwart Web-Admin-Oberfläche (HTTP)
       #- "443:443"   # HTTPS für Web-Admin-Oberfläche
+    depends_on:
+      postgres:
+        condition: service_healthy
     networks:
       - caddy-proxy
+      - database
 
   ## Static hosting
   homepage:
