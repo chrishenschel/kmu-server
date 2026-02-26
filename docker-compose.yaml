@@ -157,6 +157,20 @@ services:
     networks:
       - caddy-proxy
 
+  ## Authentik LDAP Outpost (for Stalwart user authentication)
+  authentik-ldap:
+    image: ghcr.io/goauthentik/ldap:2025.12.4
+    container_name: authentik-ldap
+    restart: unless-stopped
+    environment:
+      AUTHENTIK_HOST: http://authentik-server:9000
+      AUTHENTIK_INSECURE: "true"
+      AUTHENTIK_TOKEN: "${LDAP_OUTPOST_TOKEN}"
+    depends_on:
+      - authentikserver
+    networks:
+      - caddy-proxy
+
   ## Mailserver
   stalwart:
     image: stalwartlabs/stalwart:latest
@@ -171,6 +185,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      authentik-ldap:
+        condition: service_started
     networks:
       - caddy-proxy
       - database

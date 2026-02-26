@@ -10,7 +10,7 @@ use-proxy-headers = true
 
 [storage]
 data = "postgres"
-directory = "internal"
+directory = "authentik"
 blob = "fs"
 fts = "rocksdb"
 lookup = "rocksdb"
@@ -32,9 +32,28 @@ type = "rocksdb"
 path = "/opt/stalwart/data"
 compression = "lz4"
 
-[directory.internal]
-type = "internal"
-store = "rocksdb"
+[directory.authentik]
+type = "ldap"
+url = "ldap://authentik-ldap:3389"
+base-dn = "__LDAP_BASE_DN__"
+timeout = "30s"
+
+[directory.authentik.bind]
+dn = "cn=__BIND_USER__,ou=users,__LDAP_BASE_DN__"
+secret = "__BIND_PASSWORD__"
+
+[directory.authentik.bind.auth]
+method = "lookup"
+
+[directory.authentik.filter]
+name = "(&(objectClass=user)(uid=?))"
+email = "(&(objectClass=user)(|(mail=?)))"
+
+[directory.authentik.attributes]
+name = "uid"
+class = "objectClass"
+email = "mail"
+groups = ["memberOf"]
 
 [tracer.log]
 type = "log"
@@ -52,15 +71,4 @@ ansi = true
 enable = true
 
 [session]
-auth-mechanisms = ["plain", "oidc"]
-
-[directory.authentik]
-type = "oidc"
-timeout = "15s"
-endpoint.url = "https://auth.__DOMAIN__/application/o/userinfo/"
-endpoint.method = "userinfo"
-
-[directory.authentik.fields]
-username = "preferred_username"
-email = "email"
-full-name = "name"
+auth-mechanisms = ["plain"]
