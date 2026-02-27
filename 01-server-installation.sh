@@ -37,6 +37,10 @@ if [[ $EUID -ne 0 ]]; then
 fi
 
 log "Starting server setup process..."
+chmod a+x 02-system-setup.sh
+chmod a+x backup.sh
+chmod a+x restore.sh
+
 
 # --- Update System ---
 log "Updating package lists and upgrading system..."

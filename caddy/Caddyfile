@@ -104,7 +104,7 @@ meet.__DOMAIN__ {
     log {
         output file /var/log/caddy/access.log
     }
-    reverse_proxy web:80
+    reverse_proxy jitsi-web:80
 }
 
 admin.__DOMAIN__ {

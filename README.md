@@ -10,6 +10,8 @@ This repository contains an opinionated, **all‑in‑one self‑hosted stack** 
 - **Matrix Synapse** (`synapse`) – Matrix homeserver.
 - **Element Web** (`element`) – Matrix web client, protected by Authentik and auto‑SSO.
 - **Nextcloud** (`nextcloud`) – Files, calendar, contacts, collaboration.
+- **Jitsi Meet** (`web`, `prosody`, `jicofo`, `jvb`) – Self‑hosted video conferencing at `meet.<domain>`; internal auth for room creators, anonymous guests allowed.
+- **coturn** (`coturn`) – TURN server for Jitsi (NAT traversal); reachable at `turn.<domain>`.
 - **Stalwart Mail** (`stalwart`) – Mail server (SMTP/IMAP + web UI), backed by Authentik LDAP.
 - **Homepage** (`homepage`) – Simple static landing page.
 - **Logs / Dozzle** (`dozzle`) – Web UI for live Docker logs, protected by Authentik.
@@ -31,6 +33,7 @@ flowchart LR
   CaddyProxy --> Cloud[cloud.ACME.com\nNextcloud]
   CaddyProxy --> Matrix[matrix.ACME.com\nSynapse]
   CaddyProxy --> Element[element.ACME.com\nElement Web]
+  CaddyProxy --> Meet[meet.ACME.com\nJitsi Meet]
   CaddyProxy --> Mail[mail.ACME.com\nStalwart]
   CaddyProxy --> Logs[logs.ACME.com\nDozzle]
   CaddyProxy --> Admin[admin.ACME.com\nAdmin Panel]
@@ -53,8 +56,8 @@ flowchart LR
 - Fresh **Ubuntu/Debian** VM with root (or sudo) access.
 - Public DNS records for at least:
   - `auth.<domain>`, `cloud.<domain>`, `matrix.<domain>`, `element.<domain>`,
-  - `mail.<domain>`, `logs.<domain>`, `admin.<domain>`, and optionally bare `www.<domain>`.
-- Ports **80/443** and mail ports (**25/465/993**) reachable from the Internet.
+  - `mail.<domain>`, `logs.<domain>`, `admin.<domain>`, `meet.<domain>`, `turn.<domain>`, and optionally bare `www.<domain>`.
+- Ports **80/443** and mail ports (**25/465/993**) reachable from the Internet; **UDP 10000** (Jitsi JVB) and **3478/5349** TCP+UDP (TURN) for video conferencing.
 
 ### 1. Host bootstrap (`01-server-installation.sh`)
 
@@ -73,7 +76,7 @@ This will:
 - Install and start **fail2ban** (basic intrusion prevention).
 - Install the **Docker Engine** + Docker Compose plugin from Docker’s official repo.
 - Configure **UFW**:
-  - Allow SSH, HTTP/HTTPS, and mail ports (25/465/993).
+  - Allow SSH, HTTP/HTTPS, mail ports (25/465/993), Jitsi JVB (UDP 10000), and TURN (3478/5349 TCP+UDP).
 
 > After the script finishes, log out and back in so your user picks up the `docker` group.
 
@@ -105,7 +108,8 @@ The script will then:
   - `dozzle.yaml`, `admin.yaml`, `element-proxy.yaml`, `outpost-proxy.yaml` – proxy providers and embedded outpost wiring for `logs/admin/element`.
 - Prepare **Stalwart** configuration (`stalwart/data/etc/config.toml`).
 - Prepare **Nextcloud** directories with correct UID (`33`) ownership.
-- Bring up the entire Docker stack via `docker compose up -d`.
+- Prepare **Jitsi Meet** (`jitsi/.env.meet`) and **coturn** (`coturn/turnserver.conf`): patch domain and generate secrets (XMPP, TURN).
+- Bring up the entire Docker stack via `docker compose up -d --remove-orphans`.
 - Wait for Authentik and Stalwart to become ready and:
   - Discover the LDAP outpost token and patch `.env`.
   - Promote your initial user to Stalwart admin and create base domain + mailbox.
@@ -126,6 +130,7 @@ The Caddy configuration lives in [`caddy/Caddyfile`](caddy/Caddyfile) and:
   - `matrix.<domain>` + well‑known paths on `www.<domain>` → `synapse:8008`.
   - `element.<domain>` → `element:80`.
   - `mail.<domain>` → `stalwart-mail:8080`.
+  - `meet.<domain>` → `web:80` (Jitsi Meet; no forward_auth so guests can join).
   - `logs.<domain>` → `dozzle:8080`.
   - `admin.<domain>` → `admin-panel:8000`.
 - Applies **Authentik forward_auth** to:
@@ -176,7 +181,14 @@ Element is also configured to use the self‑hosted **Jitsi Meet** instance at `
 
 You can also paste `https://meet.<domain>/<room>` URLs into **Nextcloud** resources (calendar invitations, Deck cards, Collectives pages, etc.) so that meeting participants can join with a single click.
 
-### 6. Mail (Stalwart)
+### 6. Jitsi Meet & TURN
+
+- **Containers**: `web` (Jitsi Meet frontend), `prosody` (XMPP), `jicofo` (conference focus), `jvb` (video bridge), plus **coturn** for TURN/STUN. All defined in [`docker-compose.yaml`](docker-compose.yaml); Jitsi config in [`jitsi/.env.meet`](jitsi/.env.meet), coturn in [`coturn/turnserver.conf`](coturn/turnserver.conf).
+- **DNS**: Point `meet.<domain>` and `turn.<domain>` at your server; Caddy serves Meet over HTTPS; TURN is reached directly on ports 3478 (UDP/TCP) and 5349 (TLS).
+- **Firewall**: `01-server-installation.sh` opens UDP 10000 (JVB media) and 3478/5349 TCP+UDP (TURN). Ensure these are open if you host behind an external firewall.
+- **Auth**: Room creation requires Jitsi internal login (secure‑domain mode); guests can join without an account once a host is in the room. The Nextcloud Jitsi app is enabled and configured to use `https://meet.<domain>/` via `02-system-setup.sh`.
+
+### 7. Mail (Stalwart)
 
 - Container: `stalwart-mail` using the `stalwartlabs/stalwart:latest` image.
 - Data lives in `./stalwart/data` (mounted to `/opt/stalwart`).
@@ -186,7 +198,7 @@ You can also paste `https://meet.<domain>/<room>` URLs into **Nextcloud** resour
   - Your primary mailbox (`<username>@<domain>`),
   - A `noreply@<domain>` account used by Nextcloud.
 
-### 7. Healthchecks
+### 8. Healthchecks
 
 Most services have lightweight Docker healthchecks defined in [`docker-compose.yaml`](docker-compose.yaml), for example:
 
@@ -201,7 +213,7 @@ Most services have lightweight Docker healthchecks defined in [`docker-compose.y
 
 These are primarily to give you quick “green/red” signals via `docker ps` or orchestration dashboards.
 
-### 8. Fail2ban integration
+### 9. Fail2ban integration
 
 The stack is designed to work with **host‑level fail2ban**:
 
@@ -211,7 +223,7 @@ The stack is designed to work with **host‑level fail2ban**:
   - Block IPs that generate many 4xx/5xx responses,
   - React aggressively to scans on sensitive endpoints.
 
-### 9. Day‑to‑day operations
+### 10. Day‑to‑day operations
 
 From `/root/kmu-server` (or your clone path):
 
@@ -232,11 +244,12 @@ Admin entrypoints (assuming `DOMAIN=ACME.com`):
 - Nextcloud: `https://cloud.ACME.com`
 - Matrix homeserver: `https://matrix.ACME.com`
 - Element Web: `https://element.ACME.com`
+- Jitsi Meet: `https://meet.ACME.com`
 - Mail web UI (Stalwart): `https://mail.ACME.com`
 - Logs (Dozzle): `https://logs.ACME.com`
 - Admin panel: `https://admin.ACME.com`
 
-### 10. Contributing / Local development
+### 11. Contributing / Local development
 
 This repo is primarily infrastructure‑as‑code. For application‑level changes:
 
@@ -254,7 +267,87 @@ uvicorn app.main:app --reload
 
 Then point your browser at `http://localhost:8000` (note: in production this is only reachable behind Caddy + Authentik).
 
----
+### 12. Backup & restore
 
-If you’d like, we can extend this README further with environment variable reference tables or a more detailed “troubleshooting” section as the stack evolves.
+For basic disaster recovery, you can take logical backups of Postgres plus the key data directories for Authentik, Synapse, Nextcloud, Stalwart, Caddy, Jitsi, and the existing Postgres backup volume.
+
+- **Create a snapshot** (from the repo root):
+
+```bash
+chmod +x backup.sh restore.sh
+./backup.sh
+```
+
+This will:
+
+- Write a Postgres dump (`pg_dumpall -c`) and `.env` (if present).
+- Archive important data paths (e.g. `authentik/data`, `synapse/data`, `nextcloud/*`, `stalwart/data`, `caddy/*`, `jitsi/config`, `backups/postgres`) into `backups/snapshots/<timestamp>/`.
+
+- **Restore from a snapshot**:
+
+```bash
+./restore.sh backups/snapshots/<timestamp>
+```
+
+The restore script will:
+
+- Run `docker compose down`.
+- Restore the archived data directories from the snapshot.
+- Optionally restore `.env` from the snapshot.
+- Start Postgres, wait for it to be healthy, and apply `postgres.sql`.
+- Bring the full stack back up via `docker compose up -d`.
+
+> These scripts perform online file backups (containers keep running during `backup.sh`), but Postgres is backed up via a consistent logical dump. For stricter consistency guarantees across all services, stop the stack manually before calling `./backup.sh`.
+
+### 13. Environment variable reference
+
+Generated or used by `02-system-setup.sh` and Compose. Do not commit `.env`; it contains secrets.
+
+| Variable | Set in | Purpose |
+|----------|--------|---------|
+| `DOMAIN` | `.env` | Base domain (e.g. `example.com`); used in Caddyfile, blueprints, Nextcloud, Jitsi. |
+| `USERNAME`, `PASSWORD`, `USERFULLNAME` | `.env` | Initial admin user (Authentik, Nextcloud admin, Stalwart). |
+| `PG_PASS` | `.env` | PostgreSQL password (all DBs). |
+| `AUTHENTIK_SECRET_KEY`, `AUTHENTIK_BOOTSTRAP_*` | `.env` | Authentik bootstrap and secret key. |
+| `LDAP_BASE_DN`, `LDAP_OUTPOST_TOKEN` | `.env` | LDAP for Stalwart; outpost token discovered after blueprints apply. |
+| `MATRIX_CLIENT_ID`, `MATRIX_CLIENT_SECRET` | `.env` | Synapse OIDC provider (Authentik). |
+| `NC_CLIENT_ID`, `NC_CLIENT_SECRET` | `.env` | Nextcloud OIDC provider (Authentik). |
+| `NOREPLY_EMAIL`, `NOREPLY_MAIL_PASSWORD` | `.env` | Nextcloud outgoing mail (Stalwart). |
+
+**Jitsi** ([`jitsi/.env.meet`](jitsi/.env.meet)) – patched by `02-system-setup.sh`; placeholders replaced on first run:
+
+| Variable | Purpose |
+|----------|---------|
+| `CONFIG` | Host path for Jitsi config/volumes (default `./jitsi/config` in compose). |
+| `PUBLIC_URL` | Public Jitsi URL, e.g. `https://meet.<domain>`. |
+| `XMPP_SERVER` | Prosody hostname; must be `prosody` (Docker service name). |
+| `ENABLE_AUTH`, `ENABLE_GUESTS`, `AUTH_TYPE` | Secure-domain auth (internal); guests allowed. |
+| `JICOFO_AUTH_PASSWORD`, `JVB_AUTH_PASSWORD` | XMPP component passwords (random, patched). |
+| `TURN_HOST`, `TURNS_HOST`, `TURN_*` | TURN server (coturn); host = `turn.<domain>`, credentials patched. |
+
+**coturn** uses [`coturn/turnserver.conf`](coturn/turnserver.conf); `realm` and `user`/password are patched from the same domain and TURN credentials as Jitsi.
+
+### 14. Troubleshooting
+
+| Symptom | Likely cause | What to do |
+|--------|----------------|------------|
+| Caddy fails to start: `module not registered: caddy.logging.encoders.single_field` | Caddy image doesn't include that encoder. | Use a plain `log { output file ... }` block (no `format`), or a supported encoder. |
+| `The "CONFIG" variable is not set` when running `docker compose` | Compose substitutes `CONFIG` at parse time; it's only in `jitsi/.env.meet`. | Compose file uses `${CONFIG:-./jitsi/config}`; ensure you have that default. Re-pull or fix locally. |
+| Orphan container warning (e.g. `kmu-server-web-1`) | Left over from an old compose overlay or renamed service. | Run `docker compose up -d --remove-orphans` once; the setup script uses this by default. |
+| Jicofo/JVB: `UnknownHostException: xmpp.meet.jitsi` | XMPP_SERVER was unset or wrong; they can't resolve Prosody. | Set `XMPP_SERVER=prosody` in `jitsi/.env.meet` and restart Jitsi services (`web`, `prosody`, `jicofo`, `jvb`). |
+| Jitsi: no video/audio or "connection failed" | Firewall/NAT: JVB (UDP 10000) or TURN (3478/5349) not reachable; or DNS for `meet.<domain>` / `turn.<domain>` missing. | Open UDP 10000 and 3478/5349 TCP+UDP on host and any external firewall; add A records for `meet.<domain>` and `turn.<domain>`. |
+| Nextcloud: "Login failed" or OIDC errors | Wrong client id/secret, or trusted domain / overwrite URL mismatch. | Check `.env` has correct `NC_CLIENT_ID` / `NC_CLIENT_SECRET`; in Nextcloud, `occ config:system:get overwrite.cli.url` should be `https://cloud.<domain>`. Re-run provider setup from Settings if needed. |
+| Element: redirect loop or "Cannot reach homeserver" | Synapse not ready, or Caddy/well-known not serving Matrix discovery. | Ensure `matrix.<domain>` and `www.<domain>` (well-known) point to Caddy; check `synapse` logs and `https://matrix.<domain>/_matrix/client/versions`. |
+| Stalwart: LDAP login fails or no mailboxes | LDAP outpost token not set or outpost not running. | Re-run setup until the script prints "Got outpost token"; ensure `LDAP_OUTPOST_TOKEN` in `.env` and `authentik-ldap` container is up. |
+
+Useful commands:
+
+```bash
+docker compose ps
+docker compose logs -f caddy
+docker compose logs -f jitsi-jicofo
+docker exec --user www-data nextcloud php occ status
+```
+
+
 
