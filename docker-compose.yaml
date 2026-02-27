@@ -355,6 +355,7 @@ services:
       - jitsi/.env.meet
     volumes:
       - ${CONFIG:-./jitsi/config}/web:/config:Z
+      - ./jitsi/config-web-override/interface-config-custom.js:/config/interface-config-custom.js:ro
       - ${CONFIG:-./jitsi/config}/web/crontabs:/var/spool/cron/crontabs:Z
       - ${CONFIG:-./jitsi/config}/transcripts:/usr/share/jitsi-meet/transcripts:Z
       - ${CONFIG:-./jitsi/config}/web/load-test:/usr/share/jitsi-meet/load-test:Z

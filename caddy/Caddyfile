@@ -108,7 +108,15 @@ meet.__DOMAIN__ {
     handle /outpost.goauthentik.io/* {
         reverse_proxy authentik-server:9000
     }
-    # Optional login path: authenticated users get a JWT and redirect to the room as moderator
+    # Main page (/) — authenticated users only; meet-sso issues JWT and redirects to /?jwt=
+    handle path / {
+        forward_auth authentik-server:9000 {
+            uri /outpost.goauthentik.io/auth/caddy
+            copy_headers X-Authentik-Username X-Authentik-Groups X-Authentik-Email X-Authentik-Name X-Authentik-Uid X-Authentik-Jwt X-Authentik-Meta-Jwks X-Authentik-Meta-Outpost X-Authentik-Meta-Provider X-Authentik-Meta-App X-Authentik-Meta-Version
+        }
+        reverse_proxy meet-sso:8000
+    }
+    # Login path: get JWT and redirect to room as moderator
     handle_path /login* {
         forward_auth authentik-server:9000 {
             uri /outpost.goauthentik.io/auth/caddy
@@ -116,7 +124,7 @@ meet.__DOMAIN__ {
         }
         reverse_proxy meet-sso:8000
     }
-    # All other requests (guests or with JWT): serve Jitsi
+    # Direct room URLs (e.g. /myroom) — no auth, guests join via link
     handle {
         reverse_proxy jitsi-web:80
     }

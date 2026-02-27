@@ -20,7 +20,7 @@ TOKEN_VALIDITY_SECONDS = int(os.environ.get("TOKEN_VALIDITY_SECONDS", "86400")) 
 
 
 def _get_display_name() -> str:
-    """Prefer Authentik display name, fallback to username."""
+    """Use Authentik display name (full name) if set, otherwise username (login)."""
     name = request.headers.get("X-Authentik-Name", "").strip()
     if name:
         return name
