@@ -649,18 +649,20 @@ success "Nextcloud outgoing mail set to noreply@${domain}."
 ### --- DNS Records ---
 
 log "Fetching recommended DNS records from Stalwart..."
-DNS_JSON=$(curl -ks -u "admin:$password" "$STALWART_URL/api/dns/records/$domain" 2>&1)
-if echo "$DNS_JSON" | python3 -c "import sys,json; json.load(sys.stdin)['data']" >/dev/null 2>&1; then
-    {
-        echo ""
-        echo "============================================"
-        echo "  DNS RECORDS TO ADD FOR $domain"
-        echo "============================================"
-        echo ""
-        echo "1. MX Record:"
-        echo "   Type: MX | Host: @ | Value: mail.$domain | Priority: 10"
-        echo ""
-        echo "$DNS_JSON" | python3 -c "
+DNS_CONFIG_WRITTEN=false
+for attempt in 1 2 3 4 5; do
+    DNS_JSON=$(curl -ks -u "admin:$password" "$STALWART_URL/api/dns/records/$domain" 2>&1)
+    if echo "$DNS_JSON" | python3 -c "import sys,json; json.load(sys.stdin)['data']" >/dev/null 2>&1; then
+        {
+            echo ""
+            echo "============================================"
+            echo "  DNS RECORDS TO ADD FOR $domain"
+            echo "============================================"
+            echo ""
+            echo "1. MX Record:"
+            echo "   Type: MX | Host: @ | Value: mail.$domain | Priority: 10"
+            echo ""
+            echo "$DNS_JSON" | python3 -c "
 import sys, json
 records = json.load(sys.stdin)['data']
 i = 2
@@ -672,8 +674,37 @@ for r in records:
     print()
     i += 1
 "
+            echo "============================================"
+        } | tee dns-config.txt
+        DNS_CONFIG_WRITTEN=true
+        success "DNS records written to dns-config.txt"
+        break
+    fi
+    if [ "$attempt" -lt 5 ]; then
+        log "  Attempt $attempt - Stalwart DNS API not ready yet, retrying in 5s..."
+        sleep 5
+    fi
+done
+
+if [ "$DNS_CONFIG_WRITTEN" != "true" ]; then
+    log "Could not fetch DNS records from Stalwart API; writing fallback dns-config.txt with essential records."
+    {
+        echo ""
+        echo "============================================"
+        echo "  DNS RECORDS TO ADD FOR $domain (fallback)"
+        echo "============================================"
+        echo ""
+        echo "Stalwart API did not return full DNS data. Add at least:"
+        echo ""
+        echo "1. MX Record:"
+        echo "   Type: MX | Host: @ | Value: mail.$domain | Priority: 10"
+        echo ""
+        echo "2. Get DKIM, SPF, and DMARC from Stalwart:"
+        echo "   Open https://mail.$domain → sign in as admin → manage domain → DNS / DKIM"
+        echo ""
         echo "============================================"
     } | tee dns-config.txt
+    success "Fallback DNS instructions written to dns-config.txt"
 fi
 
 success "Setup complete! All services are running."
