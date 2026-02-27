@@ -5,6 +5,29 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$ROOT_DIR"
 
+# Default: stop stack before backup so no files are written during backup.
+# Use --online to backup while the stack is running (faster, but not guaranteed consistent for all files).
+STOP_STACK=true
+for arg in "$@"; do
+  case "$arg" in
+    --online)
+      STOP_STACK=false
+      ;;
+    -h|--help)
+      echo "Usage: $0 [--online]"
+      echo ""
+      echo "  (default)  Stop the stack, then take a snapshot (no writes during backup)."
+      echo "  --online   Take snapshot while the stack is running (no downtime; files may be in use)."
+      exit 0
+      ;;
+    *)
+      echo "Unknown option: $arg" >&2
+      echo "Use --help for usage." >&2
+      exit 1
+      ;;
+  esac
+done
+
 SNAPSHOT_BASE="backups/snapshots"
 TIMESTAMP="$(date +%Y%m%d-%H%M%S)"
 SNAPSHOT_DIR="${SNAPSHOT_BASE}/${TIMESTAMP}"
@@ -12,12 +35,24 @@ SNAPSHOT_DIR="${SNAPSHOT_BASE}/${TIMESTAMP}"
 mkdir -p "$SNAPSHOT_DIR"
 
 echo "Creating KMU snapshot in ${SNAPSHOT_DIR}"
+if [ "$STOP_STACK" = true ]; then
+  echo "Mode: stack will be stopped during backup (no writes)."
+else
+  echo "Mode: online backup (stack keeps running)."
+fi
 
 if [ -f ".env" ]; then
   echo "Copying .env into snapshot"
   cp .env "${SNAPSHOT_DIR}/env"
 else
   echo "WARNING: .env not found; secrets will not be included in this snapshot."
+fi
+
+if [ "$STOP_STACK" = true ]; then
+  echo "Stopping the full stack..."
+  docker compose down
+  echo "Starting postgres only for dump..."
+  docker compose up -d postgres
 fi
 
 echo "Ensuring postgres service is running..."
@@ -31,6 +66,11 @@ done
 
 echo "Dumping Postgres cluster to ${SNAPSHOT_DIR}/postgres.sql ..."
 docker compose exec -T postgres pg_dumpall -U postgres -c > "${SNAPSHOT_DIR}/postgres.sql"
+
+if [ "$STOP_STACK" = true ]; then
+  echo "Stopping postgres so data directories are idle..."
+  docker compose down
+fi
 
 echo "Archiving service data directories..."
 
@@ -62,6 +102,11 @@ for path in "${PATHS[@]}"; do
     echo "  Skipping missing path: ${path}"
   fi
 done
+
+if [ "$STOP_STACK" = true ]; then
+  echo "Starting the full stack again..."
+  docker compose up -d
+fi
 
 echo "Snapshot completed successfully: ${SNAPSHOT_DIR}"
 

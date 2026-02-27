@@ -278,10 +278,14 @@ chmod +x backup.sh restore.sh
 ./backup.sh
 ```
 
-This will:
+By default the script **stops the stack** before archiving so no files are written during backup, then brings the stack back up. It will:
 
-- Write a Postgres dump (`pg_dumpall -c`) and `.env` (if present).
-- Archive important data paths (e.g. `authentik/data`, `synapse/data`, `nextcloud/*`, `stalwart/data`, `caddy/*`, `jitsi/config`, `backups/postgres`) into `backups/snapshots/<timestamp>/`.
+- Stop all services (`docker compose down`).
+- Start Postgres only and write a full cluster dump (`pg_dumpall -c`) and copy `.env` (if present) into the snapshot.
+- Stop Postgres, then archive the data directories (authentik/data, synapse/data, nextcloud/*, stalwart/data, caddy/*, jitsi/config, backups/postgres) into `backups/snapshots/<timestamp>/`.
+- Start the full stack again (`docker compose up -d`).
+
+Use `./backup.sh --online` to take a snapshot **without** stopping the stack (no downtime, but some files may be in use during the backup). Use `./backup.sh --help` for options.
 
 - **Restore from a snapshot**:
 
@@ -296,8 +300,6 @@ The restore script will:
 - Optionally restore `.env` from the snapshot.
 - Start Postgres, wait for it to be healthy, and apply `postgres.sql`.
 - Bring the full stack back up via `docker compose up -d`.
-
-> These scripts perform online file backups (containers keep running during `backup.sh`), but Postgres is backed up via a consistent logical dump. For stricter consistency guarantees across all services, stop the stack manually before calling `./backup.sh`.
 
 ### 13. Environment variable reference
 
