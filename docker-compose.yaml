@@ -343,10 +343,10 @@ services:
     env_file:
       - jitsi/.env.meet
     volumes:
-      - ${CONFIG}/web:/config:Z
-      - ${CONFIG}/web/crontabs:/var/spool/cron/crontabs:Z
-      - ${CONFIG}/transcripts:/usr/share/jitsi-meet/transcripts:Z
-      - ${CONFIG}/web/load-test:/usr/share/jitsi-meet/load-test:Z
+      - ${CONFIG:-./jitsi/config}/web:/config:Z
+      - ${CONFIG:-./jitsi/config}/web/crontabs:/var/spool/cron/crontabs:Z
+      - ${CONFIG:-./jitsi/config}/transcripts:/usr/share/jitsi-meet/transcripts:Z
+      - ${CONFIG:-./jitsi/config}/web/load-test:/usr/share/jitsi-meet/load-test:Z
     networks:
       - meet.jitsi
       - caddy-proxy
@@ -365,8 +365,8 @@ services:
       - "5347"
       - "${PROSODY_HTTP_PORT:-5280}"
     volumes:
-      - ${CONFIG}/prosody/config:/config:Z
-      - ${CONFIG}/prosody/prosody-plugins-custom:/prosody-plugins-custom:Z
+      - ${CONFIG:-./jitsi/config}/prosody/config:/config:Z
+      - ${CONFIG:-./jitsi/config}/prosody/prosody-plugins-custom:/prosody-plugins-custom:Z
     networks:
       - meet.jitsi
 
@@ -379,7 +379,7 @@ services:
     ports:
       - "127.0.0.1:${JICOFO_REST_PORT:-8888}:8888"
     volumes:
-      - ${CONFIG}/jicofo:/config:Z
+      - ${CONFIG:-./jitsi/config}/jicofo:/config:Z
     depends_on:
       - prosody
     networks:
@@ -395,7 +395,7 @@ services:
       - "${JVB_PORT:-10000}:${JVB_PORT:-10000}/udp"
       - "127.0.0.1:${JVB_COLIBRI_PORT:-8080}:8080"
     volumes:
-      - ${CONFIG}/jvb:/config:Z
+      - ${CONFIG:-./jitsi/config}/jvb:/config:Z
     depends_on:
       - prosody
     networks:

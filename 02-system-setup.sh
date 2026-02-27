@@ -317,7 +317,7 @@ else
 fi
 
 log "Bringing up full stack (including Jitsi)..."
-docker compose up -d
+docker compose up -d --remove-orphans
 
 ### --- POST-DEPLOY: LDAP Outpost Token + Stalwart Admin Promotion ---
 
