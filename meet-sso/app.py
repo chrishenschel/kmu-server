@@ -1,7 +1,7 @@
 """
-Jitsi Meet SSO bridge: when users hit meet.<domain> behind Caddy forward_auth,
-we receive X-Authentik-* headers. We issue a JWT for Jitsi and redirect
-to the same URL with ?jwt=... so Jitsi accepts the user as moderator.
+Jitsi Meet SSO bridge: when authenticated users hit meet.<domain>/login[/room],
+we receive X-Authentik-* headers, issue a JWT, and redirect to meet.<domain>/[room]?jwt=...
+so they join as moderator. Guests use meet.<domain>/room directly without /login.
 """
 import os
 import time

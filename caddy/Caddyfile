@@ -104,24 +104,21 @@ meet.__DOMAIN__ {
     log {
         output file /var/log/caddy/access.log
     }
-    # Authentik: only logged-in users can open Meet; meet-sso issues JWT and redirects with ?jwt=
+    # Authentik outpost callback path
     handle /outpost.goauthentik.io/* {
         reverse_proxy authentik-server:9000
     }
-    handle {
+    # Optional login path: authenticated users get a JWT and redirect to the room as moderator
+    handle_path /login* {
         forward_auth authentik-server:9000 {
             uri /outpost.goauthentik.io/auth/caddy
             copy_headers X-Authentik-Username X-Authentik-Groups X-Authentik-Email X-Authentik-Name X-Authentik-Uid X-Authentik-Jwt X-Authentik-Meta-Jwks X-Authentik-Meta-Outpost X-Authentik-Meta-Provider X-Authentik-Meta-App X-Authentik-Meta-Version
         }
-        # If request already has a JWT (after redirect), serve Jitsi
-        @withjwt query jwt *
-        handle @withjwt {
-            reverse_proxy jitsi-web:80
-        }
-        # No JWT: proxy to meet-sso which issues JWT and redirects back with ?jwt=
-        handle {
-            reverse_proxy meet-sso:8000
-        }
+        reverse_proxy meet-sso:8000
+    }
+    # All other requests (guests or with JWT): serve Jitsi
+    handle {
+        reverse_proxy jitsi-web:80
     }
 }
 
