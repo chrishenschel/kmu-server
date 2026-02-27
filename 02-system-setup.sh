@@ -253,6 +253,34 @@ sed -i \
     -e "s|__DOMAIN__|$domain|g" \
     "./authentik/blueprints/nextcloud.yaml"
 
+# VAULTWARDEN (SSO with Authentik)
+VW_CLIENT_ID=$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9' | head -c 40)
+VW_CLIENT_SECRET=$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9' | head -c 60)
+echo "VW_CLIENT_ID=$VW_CLIENT_ID" >> .env
+echo "VW_CLIENT_SECRET=$VW_CLIENT_SECRET" >> .env
+sed -i \
+    -e "s|__VW_CLIENT_ID__|$VW_CLIENT_ID|g" \
+    -e "s|__VW_CLIENT_SECRET__|$VW_CLIENT_SECRET|g" \
+    -e "s|__DOMAIN__|$domain|g" \
+    "./authentik/blueprints/vaultwarden.yaml"
+
+# IMMICH (OAuth with Authentik)
+IMMICH_CLIENT_ID=$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9' | head -c 40)
+IMMICH_CLIENT_SECRET=$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9' | head -c 60)
+echo "IMMICH_CLIENT_ID=$IMMICH_CLIENT_ID" >> .env
+echo "IMMICH_CLIENT_SECRET=$IMMICH_CLIENT_SECRET" >> .env
+sed -i \
+    -e "s|__IMMICH_CLIENT_ID__|$IMMICH_CLIENT_ID|g" \
+    -e "s|__IMMICH_CLIENT_SECRET__|$IMMICH_CLIENT_SECRET|g" \
+    -e "s|__DOMAIN__|$domain|g" \
+    "./authentik/blueprints/immich.yaml"
+# Immich config file (OAuth issuer + client credentials)
+sed -i \
+    -e "s|__IMMICH_CLIENT_ID__|$IMMICH_CLIENT_ID|g" \
+    -e "s|__IMMICH_CLIENT_SECRET__|$IMMICH_CLIENT_SECRET|g" \
+    -e "s|__DOMAIN__|$domain|g" \
+    "./immich/immich.json"
+
 # CRITICAL: Strip CRLF (\r) line endings from all blueprints to ensure Authentik can parse them
 sed -i 's/\r$//' ./authentik/blueprints/*.yaml
 
@@ -261,6 +289,12 @@ log "Setting Nextcloud directory permissions for www-data (uid 33)..."
 mkdir -p nextcloud/config nextcloud/data nextcloud/apps nextcloud/theme
 chown -R 33:33 nextcloud/config nextcloud/data nextcloud/apps nextcloud/theme
 success "Nextcloud directories ready."
+
+mkdir -p vaultwarden/data
+success "Vaultwarden data directory ready."
+
+mkdir -p immich/library
+success "Immich library directory ready."
 
 ### --- Jitsi Meet configuration ---
 

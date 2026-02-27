@@ -11,6 +11,7 @@ rm -rf ./nextcloud/
 rm -rf ./static/
 rm -rf ./coturn/
 rm -rf ./jitsi/
+rm -rf ./vaultwarden/
 rm dns-config.txt
 docker volume rm infra_synapse_data
 

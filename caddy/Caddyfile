@@ -146,3 +146,19 @@ admin.__DOMAIN__ {
         reverse_proxy admin-panel:8000
     }
 }
+
+vaultwarden.__DOMAIN__ {
+    log {
+        output file /var/log/caddy/access.log
+    }
+    # No forward_auth: Vaultwarden login page offers SSO; OIDC callback is /identity/connect/oidc-signin
+    reverse_proxy vaultwarden:80
+}
+
+immich.__DOMAIN__ {
+    log {
+        output file /var/log/caddy/access.log
+    }
+    # No forward_auth: Immich handles OAuth login at /auth/login and /user-settings
+    reverse_proxy immich-server:2283
+}

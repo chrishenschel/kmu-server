@@ -1,0 +1,15 @@
+{
+  "oauth": {
+    "enabled": true,
+    "issuerUrl": "https://auth.__DOMAIN__/application/o/immich/.well-known/openid-configuration",
+    "clientId": "__IMMICH_CLIENT_ID__",
+    "clientSecret": "__IMMICH_CLIENT_SECRET__",
+    "scope": "openid email profile",
+    "autoRegister": true,
+    "buttonText": "Login with OAuth",
+    "signingAlgorithm": "RS256"
+  },
+  "server": {
+    "externalDomain": "https://immich.__DOMAIN__"
+  }
+}

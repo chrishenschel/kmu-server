@@ -1,0 +1,55 @@
+version: 1
+metadata:
+  name: __DOMAIN__ Vaultwarden Integration
+  labels:
+    type: custom
+entries:
+  # 1. Custom scope mapping: Vaultwarden requires email_verified: True (authentik 2025.10+ returns False by default)
+  - model: authentik_providers_oauth2.scopemapping
+    id: vaultwarden-email-scope
+    identifiers:
+      name: "Vaultwarden Email Scope"
+    attrs:
+      scope_name: email
+      expression: |
+        return {
+            "email": request.user.email,
+            "email_verified": True
+        }
+    state: present
+
+  # 2. OAuth2/OIDC Provider for Vaultwarden SSO
+  - model: authentik_providers_oauth2.oauth2provider
+    id: vaultwarden-provider
+    identifiers:
+      name: Vaultwarden Provider
+    attrs:
+      client_id: __VW_CLIENT_ID__
+      client_secret: __VW_CLIENT_SECRET__
+      redirect_uris:
+        - matching_mode: strict
+          url: https://vaultwarden.__DOMAIN__/identity/connect/oidc-signin
+      token_validity: hours=1
+      sub_mode: user_uuid
+      signing_key: !Find [authentik_crypto.certificatekeypair, [name, "authentik Self-signed Certificate"]]
+      authorization_flow: !Find [authentik_flows.flow, [slug, "default-provider-authorization-implicit-consent"]]
+      invalidation_flow: !Find [authentik_flows.flow, [slug, "default-provider-invalidation-flow"]]
+      property_mappings:
+        - !Find [authentik_providers_oauth2.scopemapping, [scope_name, "openid"]]
+        - !Find [authentik_providers_oauth2.scopemapping, [scope_name, "profile"]]
+        - !KeyOf vaultwarden-email-scope
+        - !Find [authentik_providers_oauth2.scopemapping, [scope_name, "offline_access"]]
+    state: present
+
+  # 3. Application
+  - model: authentik_core.application
+    id: vaultwarden-app
+    identifiers:
+      slug: vaultwarden
+    attrs:
+      name: Vaultwarden
+      slug: vaultwarden
+      icon: https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/vaultwarden.png
+      provider: !KeyOf vaultwarden-provider
+      policy_engine_mode: any
+    state: present
