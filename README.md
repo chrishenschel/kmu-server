@@ -27,13 +27,13 @@ Everything is orchestrated via **`docker-compose.yaml`** and bootstrapped end‑
 flowchart LR
   Internet --> CaddyProxy[Caddy reverse_proxy]
 
-  CaddyProxy --> Auth[auth.tudels.com\nAuthentik]
-  CaddyProxy --> Cloud[cloud.tudels.com\nNextcloud]
-  CaddyProxy --> Matrix[matrix.tudels.com\nSynapse]
-  CaddyProxy --> Element[element.tudels.com\nElement Web]
-  CaddyProxy --> Mail[mail.tudels.com\nStalwart]
-  CaddyProxy --> Logs[logs.tudels.com\nDozzle]
-  CaddyProxy --> Admin[admin.tudels.com\nAdmin Panel]
+  CaddyProxy --> Auth[auth.ACME.com\nAuthentik]
+  CaddyProxy --> Cloud[cloud.ACME.com\nNextcloud]
+  CaddyProxy --> Matrix[matrix.ACME.com\nSynapse]
+  CaddyProxy --> Element[element.ACME.com\nElement Web]
+  CaddyProxy --> Mail[mail.ACME.com\nStalwart]
+  CaddyProxy --> Logs[logs.ACME.com\nDozzle]
+  CaddyProxy --> Admin[admin.ACME.com\nAdmin Panel]
 
   Auth --- PG[(Postgres)]
   Matrix --- PG
