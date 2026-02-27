@@ -109,7 +109,7 @@ meet.__DOMAIN__ {
         reverse_proxy authentik-server:9000
     }
     # Main page (/) — authenticated users only; meet-sso issues JWT and redirects to /?jwt=
-    handle path / {
+    handle / {
         forward_auth authentik-server:9000 {
             uri /outpost.goauthentik.io/auth/caddy
             copy_headers X-Authentik-Username X-Authentik-Groups X-Authentik-Email X-Authentik-Name X-Authentik-Uid X-Authentik-Jwt X-Authentik-Meta-Jwks X-Authentik-Meta-Outpost X-Authentik-Meta-Provider X-Authentik-Meta-App X-Authentik-Meta-Version
