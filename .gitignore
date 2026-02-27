@@ -1,0 +1,6 @@
+# Secrets and generated config (never commit)
+.env
+dns-config.txt
+
+# Optional: uncomment if you keep snapshots in repo (normally keep them off-server)
+# backups/snapshots/
