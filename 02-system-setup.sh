@@ -228,6 +228,10 @@ sed -i \
 
 sed -i \
     -e "s|__DOMAIN__|$domain|g" \
+    "./authentik/blueprints/element-proxy.yaml"
+
+sed -i \
+    -e "s|__DOMAIN__|$domain|g" \
     "./authentik/blueprints/outpost-proxy.yaml"
 
 # NEXTCLOUD

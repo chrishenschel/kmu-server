@@ -58,5 +58,14 @@
     "element_call": {
         "url": "https://element-call.netlify.app"
     },
-    "map_style_url": "https://api.maptiler.com/maps/streets/style.json?key=fU3vlMsMn4Jb6dnEIFsx"
+    "map_style_url": "https://api.maptiler.com/maps/streets/style.json?key=fU3vlMsMn4Jb6dnEIFsx",
+    "sso_redirect_options": {
+        "immediate": true,
+        "on_welcome_page": true,
+        "on_login_page": true
+    },
+    "setting_defaults": {
+        "UIFeature.registration": false,
+        "UIFeature.passwordReset": false
+    }
 }

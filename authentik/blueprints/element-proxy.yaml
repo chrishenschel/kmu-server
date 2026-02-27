@@ -1,0 +1,30 @@
+version: 1
+metadata:
+  name: __DOMAIN__ Element Client
+  labels:
+    type: custom
+entries:
+  # 1. Proxy Provider (Forward Auth)
+  - model: authentik_providers_proxy.proxyprovider
+    id: element-provider
+    identifiers:
+      name: Element Proxy
+    attrs:
+      mode: forward_single
+      external_host: https://element.__DOMAIN__
+      authorization_flow: !Find [authentik_flows.flow, [slug, "default-provider-authorization-implicit-consent"]]
+      invalidation_flow: !Find [authentik_flows.flow, [slug, "default-provider-invalidation-flow"]]
+    state: present
+
+  # 2. Application
+  - model: authentik_core.application
+    id: element-app
+    identifiers:
+      slug: element-web
+    attrs:
+      name: Element
+      slug: element-web
+      provider: !KeyOf element-provider
+      policy_engine_mode: any
+    state: present
+

@@ -41,7 +41,17 @@ matrix.__DOMAIN__ {
 }
 
 element.__DOMAIN__ {
-    reverse_proxy element:80
+    # Outpost path (callback, etc.) must be proxied to Authentik so login redirect works
+    handle /outpost.goauthentik.io/* {
+        reverse_proxy authentik-server:9000
+    }
+    handle {
+        forward_auth authentik-server:9000 {
+            uri /outpost.goauthentik.io/auth/caddy
+            copy_headers X-Authentik-Username X-Authentik-Groups X-Authentik-Email X-Authentik-Name X-Authentik-Uid X-Authentik-Jwt X-Authentik-Meta-Jwks X-Authentik-Meta-Outpost X-Authentik-Meta-Provider X-Authentik-Meta-App X-Authentik-Meta-Version
+        }
+        reverse_proxy element:80
+    }
 }
 
 cloud.__DOMAIN__ {
