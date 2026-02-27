@@ -61,7 +61,7 @@ flowchart LR
 On a new server, run as root:
 
 ```bash
-curl -O https://.../01-server-installation.sh   # or copy this repo first
+git clone https://github.com/chrishenschel/kmu-server.git
 chmod +x 01-server-installation.sh
 sudo ./01-server-installation.sh
 ```
@@ -79,17 +79,17 @@ This will:
 
 ### 2. Application bootstrap (`02-system-setup.sh`)
 
-Once this repository is on the server (`/root/kmu-server` is assumed in the scripts), run:
+Once this repository is on the server (`./kmu-server` is assumed in the scripts), run:
 
 ```bash
-cd /root/kmu-server
+cd kmu-server
 chmod +x 02-system-setup.sh
 ./02-system-setup.sh
 ```
 
 You’ll be prompted for:
 
-- `domain` – e.g. `tudels.com`.
+- `domain` – e.g. `ACME.com`.
 - Initial Authentik / system admin user (`username`, full name, password, email).
 
 The script will then:
@@ -218,15 +218,15 @@ docker compose logs -f authentikserver
 docker ps
 ```
 
-Admin entrypoints (assuming `DOMAIN=tudels.com`):
+Admin entrypoints (assuming `DOMAIN=ACME.com`):
 
-- Authentik: `https://auth.tudels.com`
-- Nextcloud: `https://cloud.tudels.com`
-- Matrix homeserver: `https://matrix.tudels.com`
-- Element Web: `https://element.tudels.com`
-- Mail web UI (Stalwart): `https://mail.tudels.com`
-- Logs (Dozzle): `https://logs.tudels.com`
-- Admin panel: `https://admin.tudels.com`
+- Authentik: `https://auth.ACME.com`
+- Nextcloud: `https://cloud.ACME.com`
+- Matrix homeserver: `https://matrix.ACME.com`
+- Element Web: `https://element.ACME.com`
+- Mail web UI (Stalwart): `https://mail.ACME.com`
+- Logs (Dozzle): `https://logs.ACME.com`
+- Admin panel: `https://admin.ACME.com`
 
 ### 10. Contributing / Local development
 
