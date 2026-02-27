@@ -91,9 +91,14 @@ ufw allow 443/tcp
 ufw allow 25/tcp # SMTP
 ufw allow 465/tcp # SMTPS (SMTP über SSL/TLS)
 ufw allow 993/tcp # IMAPS (IMAP über SSL/TLS)
+ufw allow 10000/udp # Jitsi JVB media
+ufw allow 3478/tcp  # TURN (coturn)
+ufw allow 3478/udp  # TURN (coturn)
+ufw allow 5349/tcp  # TURN TLS (coturn)
+ufw allow 5349/udp  # TURN TLS (coturn)
 # Enable UFW (implicitly handles existing connections so we don't lock ourselves out)
 echo "y" | ufw enable
-success "Firewall configured: SSH, HTTP, HTTPS, SMTP, SMTPS, and IMAPS allowed."
+success "Firewall configured: SSH, HTTP, HTTPS, mail, and Jitsi (media + TURN) allowed."
 
 # --- Security: SSH Hardening (Optional but recommended) ---
 # Note: These are commented out as they require manual confirmation to avoid lockouts.

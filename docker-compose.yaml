@@ -335,6 +335,87 @@ services:
       retries: 3
       start_period: 10s
 
+  ## Jitsi Meet
+  jitsiweb:
+    image: jitsi/web:${JITSI_IMAGE_VERSION:-stable}
+    container_name: jitsi-web
+    restart: ${RESTART_POLICY:-unless-stopped}
+    env_file:
+      - jitsi/.env.meet
+    volumes:
+      - ${CONFIG}/web:/config:Z
+      - ${CONFIG}/web/crontabs:/var/spool/cron/crontabs:Z
+      - ${CONFIG}/transcripts:/usr/share/jitsi-meet/transcripts:Z
+      - ${CONFIG}/web/load-test:/usr/share/jitsi-meet/load-test:Z
+    networks:
+      - meet.jitsi
+      - caddy-proxy
+    depends_on:
+      - jvb
+
+  prosody:
+    image: jitsi/prosody:${JITSI_IMAGE_VERSION:-stable}
+    container_name: jitsi-prosody
+    restart: ${RESTART_POLICY:-unless-stopped}
+    env_file:
+      - jitsi/.env.meet
+    expose:
+      - "${XMPP_PORT:-5222}"
+      - "${PROSODY_S2S_PORT:-5269}"
+      - "5347"
+      - "${PROSODY_HTTP_PORT:-5280}"
+    volumes:
+      - ${CONFIG}/prosody/config:/config:Z
+      - ${CONFIG}/prosody/prosody-plugins-custom:/prosody-plugins-custom:Z
+    networks:
+      - meet.jitsi
+
+  jicofo:
+    image: jitsi/jicofo:${JITSI_IMAGE_VERSION:-stable}
+    container_name: jitsi-jicofo
+    restart: ${RESTART_POLICY:-unless-stopped}
+    env_file:
+      - jitsi/.env.meet
+    ports:
+      - "127.0.0.1:${JICOFO_REST_PORT:-8888}:8888"
+    volumes:
+      - ${CONFIG}/jicofo:/config:Z
+    depends_on:
+      - prosody
+    networks:
+      - meet.jitsi
+
+  jvb:
+    image: jitsi/jvb:${JITSI_IMAGE_VERSION:-stable}
+    container_name: jitsi-jvb
+    restart: ${RESTART_POLICY:-unless-stopped}
+    env_file:
+      - jitsi/.env.meet
+    ports:
+      - "${JVB_PORT:-10000}:${JVB_PORT:-10000}/udp"
+      - "127.0.0.1:${JVB_COLIBRI_PORT:-8080}:8080"
+    volumes:
+      - ${CONFIG}/jvb:/config:Z
+    depends_on:
+      - prosody
+    networks:
+      - meet.jitsi
+
+  ## TURN server (coturn) for Jitsi
+  coturn:
+    image: coturn/coturn:latest
+    container_name: coturn
+    restart: unless-stopped
+    volumes:
+      - ./coturn/turnserver.conf:/etc/coturn/turnserver.conf:ro
+    ports:
+      - "3478:3478/tcp"
+      - "3478:3478/udp"
+      - "5349:5349/tcp"
+      - "5349:5349/udp"
+    networks:
+      - meet.jitsi
+
 volumes:
   database:
     driver: local
@@ -344,3 +425,4 @@ networks:
     external: true
   database:
     external: true
+  meet.jitsi:

@@ -9,6 +9,8 @@ rm -rf ./authentic/
 rm -rf ./postgres/
 rm -rf ./nextcloud/
 rm -rf ./static/
+rm -rf ./coturn/
+rm -rf ./jitsi/
 rm dns-config.txt
 docker volume rm infra_synapse_data
 

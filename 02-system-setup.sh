@@ -280,13 +280,44 @@ if [ -f jitsi/.env.meet ]; then
         sed -i "s|__JVB_AUTH_PASSWORD__|$JVB_AUTH_PASSWORD|g" jitsi/.env.meet
     fi
 
+    # Generate TURN credentials for coturn + Jitsi on first run
+    if grep -q "__TURN_USER__" jitsi/.env.meet; then
+        TURN_USER="jitsi-$(head -c 50 /dev/urandom | tr -dc 'a-zA-Z0-9' | head -c 8)"
+        TURN_PASS="$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9' | head -c 32)"
+        sed -i \
+            -e "s|__TURN_USER__|$TURN_USER|g" \
+            -e "s|__TURN_PASS__|$TURN_PASS|g" \
+            jitsi/.env.meet
+    fi
+
     success "Jitsi Meet env patched."
 else
     log "jitsi/.env.meet not found; skipping Jitsi configuration (no Jitsi deployment)."
 fi
 
-log "Bringing up core stack + Jitsi (docker-compose + Jitsi overlay)..."
-docker compose -f docker-compose.yaml -f jitsi/docker-compose.jitsi.yaml up -d
+# Patch coturn configuration with realm and credentials to match Jitsi
+if [ -f coturn/turnserver.conf ]; then
+    if grep -q "__TURN_REALM__" coturn/turnserver.conf; then
+        sed -i "s|__TURN_REALM__|$domain|g" coturn/turnserver.conf
+    fi
+    if grep -q "__TURN_USER__" coturn/turnserver.conf && grep -q "__TURN_PASS__" coturn/turnserver.conf; then
+        # Reuse TURN_USER / TURN_PASS from Jitsi env if set, otherwise generate
+        if [ -z "${TURN_USER:-}" ] || [ -z "${TURN_PASS:-}" ]; then
+            TURN_USER="jitsi-$(head -c 50 /dev/urandom | tr -dc 'a-zA-Z0-9' | head -c 8)"
+            TURN_PASS="$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9' | head -c 32)"
+        fi
+        sed -i \
+            -e "s|__TURN_USER__|$TURN_USER|g" \
+            -e "s|__TURN_PASS__|$TURN_PASS|g" \
+            coturn/turnserver.conf
+    fi
+    success "coturn configuration patched."
+else
+    log "coturn/turnserver.conf not found; skipping coturn configuration."
+fi
+
+log "Bringing up full stack (including Jitsi)..."
+docker compose up -d
 
 ### --- POST-DEPLOY: LDAP Outpost Token + Stalwart Admin Promotion ---
 
