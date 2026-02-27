@@ -10,6 +10,7 @@ services:
       - ./caddy/data:/data
       - ./caddy/config:/config
       - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./caddy/logs:/var/log/caddy
     networks:
       - caddy-proxy
     # Simple binary-level healthcheck; image is scratch (no shell/curl)

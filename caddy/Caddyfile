@@ -4,6 +4,10 @@
 }
 
 www.__DOMAIN__ __DOMAIN__ {
+    log {
+        output file /var/log/caddy/access.log
+        format single_field common_log
+    }
     handle /.well-known/matrix/client {
         header Content-Type application/json
         header Access-Control-Allow-Origin *
@@ -29,18 +33,34 @@ www.__DOMAIN__ __DOMAIN__ {
 }
 
 auth.__DOMAIN__ {
+    log {
+        output file /var/log/caddy/access.log
+        format single_field common_log
+    }
     reverse_proxy authentik-server:9000
 }
 
 mail.__DOMAIN__ {
+    log {
+        output file /var/log/caddy/access.log
+        format single_field common_log
+    }
     reverse_proxy stalwart-mail:8080
 }
 
 matrix.__DOMAIN__ {
+    log {
+        output file /var/log/caddy/access.log
+        format single_field common_log
+    }
     reverse_proxy synapse:8008
 }
 
 element.__DOMAIN__ {
+    log {
+        output file /var/log/caddy/access.log
+        format single_field common_log
+    }
     # Outpost path (callback, etc.) must be proxied to Authentik so login redirect works
     handle /outpost.goauthentik.io/* {
         reverse_proxy authentik-server:9000
@@ -55,6 +75,10 @@ element.__DOMAIN__ {
 }
 
 cloud.__DOMAIN__ {
+    log {
+        output file /var/log/caddy/access.log
+        format single_field common_log
+    }
     redir /.well-known/carddav /remote.php/dav 301
     redir /.well-known/caldav /remote.php/dav 301
     redir /.well-known/webfinger /index.php/.well-known/webfinger 301
@@ -64,6 +88,10 @@ cloud.__DOMAIN__ {
 }
 
 logs.__DOMAIN__ {
+    log {
+        output file /var/log/caddy/access.log
+        format single_field common_log
+    }
     # Outpost path (callback, etc.) must be proxied to Authentik so login redirect works
     handle /outpost.goauthentik.io/* {
         reverse_proxy authentik-server:9000
@@ -80,6 +108,10 @@ logs.__DOMAIN__ {
 }
 
 admin.__DOMAIN__ {
+    log {
+        output file /var/log/caddy/access.log
+        format single_field common_log
+    }
     # Outpost path (callback, etc.) must be proxied to Authentik so login redirect works
     handle /outpost.goauthentik.io/* {
         reverse_proxy authentik-server:9000

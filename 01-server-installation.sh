@@ -46,6 +46,12 @@ apt update && apt upgrade -y
 log "Installing essential packages..."
 apt install -y ca-certificates curl git ufw software-properties-common yq
 
+# --- Install and enable fail2ban ---
+log "Installing fail2ban (intrusion prevention)..."
+apt install -y fail2ban
+systemctl enable --now fail2ban
+success "fail2ban installed and running."
+
 # --- Install Docker (Idempotent) ---
 if ! command -v docker &> /dev/null; then
     log "Docker not found. Installing Docker..."
