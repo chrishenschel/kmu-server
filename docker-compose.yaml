@@ -336,6 +336,17 @@ services:
       start_period: 10s
 
   ## Jitsi Meet
+  meet-sso:
+    build: ./meet-sso
+    container_name: meet-sso
+    restart: ${RESTART_POLICY:-unless-stopped}
+    environment:
+      JWT_APP_ID: ${JWT_APP_ID:-jitsi}
+      JWT_APP_SECRET: ${JWT_APP_SECRET:?JWT_APP_SECRET required for Meet SSO}
+      MEET_DOMAIN: ${MEET_DOMAIN:-meet.${DOMAIN}}
+    networks:
+      - caddy-proxy
+
   jitsiweb:
     image: jitsi/web:${JITSI_IMAGE_VERSION:-stable}
     container_name: jitsi-web

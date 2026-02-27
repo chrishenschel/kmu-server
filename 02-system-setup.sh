@@ -236,6 +236,10 @@ sed -i \
     -e "s|__DOMAIN__|$domain|g" \
     "./authentik/blueprints/outpost-proxy.yaml"
 
+sed -i \
+    -e "s|__DOMAIN__|$domain|g" \
+    "./authentik/blueprints/meet.yaml"
+
 # NEXTCLOUD
 NC_CLIENT_ID=$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9' | head -c 40)
 NC_CLIENT_SECRET=$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9' | head -c 60)
@@ -299,6 +303,19 @@ if [ -f jitsi/.env.meet ]; then
             -e "s|__TURN_USER__|$TURN_USER|g" \
             -e "s|__TURN_PASS__|$TURN_PASS|g" \
             jitsi/.env.meet
+    fi
+
+    # JWT auth for Meet SSO (Authentik): app id and secret must match meet-sso service
+    if grep -q "__JWT_APP_ID__" jitsi/.env.meet; then
+        JWT_APP_ID="jitsi"
+        JWT_APP_SECRET="$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9' | head -c 48)"
+        sed -i \
+            -e "s|__JWT_APP_ID__|$JWT_APP_ID|g" \
+            -e "s|__JWT_APP_SECRET__|$JWT_APP_SECRET|g" \
+            jitsi/.env.meet
+        echo "JWT_APP_ID=$JWT_APP_ID" >> .env
+        echo "JWT_APP_SECRET=$JWT_APP_SECRET" >> .env
+        echo "MEET_DOMAIN=meet.$domain" >> .env
     fi
 
     success "Jitsi Meet env patched."

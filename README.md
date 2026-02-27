@@ -186,7 +186,7 @@ You can also paste `https://meet.<domain>/<room>` URLs into **Nextcloud** resour
 - **Containers**: `web` (Jitsi Meet frontend), `prosody` (XMPP), `jicofo` (conference focus), `jvb` (video bridge), plus **coturn** for TURN/STUN. All defined in [`docker-compose.yaml`](docker-compose.yaml); Jitsi config in [`jitsi/.env.meet`](jitsi/.env.meet), coturn in [`coturn/turnserver.conf`](coturn/turnserver.conf).
 - **DNS**: Point `meet.<domain>` and `turn.<domain>` at your server; Caddy serves Meet over HTTPS; TURN is reached directly on ports 3478 (UDP/TCP) and 5349 (TLS).
 - **Firewall**: `01-server-installation.sh` opens UDP 10000 (JVB media) and 3478/5349 TCP+UDP (TURN). Ensure these are open if you host behind an external firewall.
-- **Auth**: Room creation requires Jitsi internal login (secure‑domain mode); guests can join without an account once a host is in the room. The Nextcloud Jitsi app is enabled and configured to use `https://meet.<domain>/` via `02-system-setup.sh`.
+- **Auth**: Meet uses **JWT authentication** (see [`jitsi/.env.meet`](jitsi/.env.meet)). The **meet-sso** container issues JWTs when users hit `meet.<domain>` after Authentik login; only users with a valid JWT can start meetings. Guests can join existing rooms. The Authentik blueprint [`authentik/blueprints/meet.yaml`](authentik/blueprints/meet.yaml) registers the Meet app with the proxy outpost. The Nextcloud Jitsi app is enabled and configured to use `https://meet.<domain>/` via `02-system-setup.sh`.
 
 ### 7. Mail (Stalwart)
 
