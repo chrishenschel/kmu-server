@@ -306,6 +306,14 @@ services:
       - stalwart
     networks:
       - caddy-proxy
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - python -c "import sys, urllib.request; urllib.request.urlopen('http://localhost:8000/api/health', timeout=5); sys.exit(0)"
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
 
   ## Static hosting
   homepage:
