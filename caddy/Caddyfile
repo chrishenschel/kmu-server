@@ -107,6 +107,14 @@ logs.__DOMAIN__ {
     }
 }
 
+meet.__DOMAIN__ {
+    log {
+        output file /var/log/caddy/access.log
+        format single_field common_log
+    }
+    reverse_proxy web:80
+}
+
 admin.__DOMAIN__ {
     log {
         output file /var/log/caddy/access.log

@@ -146,7 +146,7 @@ Authentik is the central identity provider:
 
 Blueprints are under [`authentik/blueprints`](authentik/blueprints).
 
-### 5. Element Web auto‑SSO
+### 5. Element Web auto‑SSO & Jitsi meetings
 
 [`element/config.json`](element/config.json) is customized to:
 
@@ -167,6 +167,14 @@ Blueprints are under [`authentik/blueprints`](authentik/blueprints).
 ```
 
 Combined with Synapse’s OIDC config and Caddy forward_auth, visiting `https://element.<domain>` as an authenticated Authentik user should drop you straight into Element without seeing the generic login screen.
+
+Element is also configured to use the self‑hosted **Jitsi Meet** instance at `https://meet.<domain>` for ad‑hoc video meetings:
+
+- `meet.<domain>` is served by Jitsi’s `web` container via Caddy, without additional Authentik forward_auth, so **anonymous guests can join** an existing room once an authenticated host is present.
+- Room creation is protected by Jitsi’s **internal authentication** (secure‑domain mode), so only users with Jitsi credentials can start new meetings.
+- From Element, when you start a Jitsi call, the integration uses `https://meet.<domain>` as the conference host.
+
+You can also paste `https://meet.<domain>/<room>` URLs into **Nextcloud** resources (calendar invitations, Deck cards, Collectives pages, etc.) so that meeting participants can join with a single click.
 
 ### 6. Mail (Stalwart)
 

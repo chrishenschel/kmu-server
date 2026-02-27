@@ -55,6 +55,9 @@
         "feature_spotlight": true,
         "feature_video_rooms": true
     },
+    "jitsi": {
+        "preferredDomain": "PLACEHOLDER_JITSI_DOMAIN"
+    },
     "element_call": {
         "url": "https://element-call.netlify.app"
     },

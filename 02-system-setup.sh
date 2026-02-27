@@ -192,10 +192,12 @@ yq -iy \
 # ELEMENT
 MATRIX_HOMESERVER="https://$MATRIX_DOMAIN"
 BRAND_NAME="$domain Chat"
+JITSI_DOMAIN="meet.$domain"
 
 sed -i \
     -e "s|PLACEHOLDER_BRAND|$BRAND_NAME|g" \
     -e "s|PLACEHOLDER_HOMESERVER|$MATRIX_HOMESERVER|g" \
+    -e "s|PLACEHOLDER_JITSI_DOMAIN|$JITSI_DOMAIN|g" \
     "./element/config.json"
 
   # STALWART
@@ -256,7 +258,35 @@ mkdir -p nextcloud/config nextcloud/data nextcloud/apps nextcloud/theme
 chown -R 33:33 nextcloud/config nextcloud/data nextcloud/apps nextcloud/theme
 success "Nextcloud directories ready."
 
-docker compose up -d
+### --- Jitsi Meet configuration ---
+
+log "Preparing Jitsi Meet configuration..."
+
+# Ensure Jitsi env file exists (committed with placeholders)
+if [ -f jitsi/.env.meet ]; then
+    # Patch domain placeholder on first run; subsequent runs are no-ops
+    if grep -q "__DOMAIN__" jitsi/.env.meet; then
+        sed -i "s|__DOMAIN__|$domain|g" jitsi/.env.meet
+    fi
+
+    # Generate strong random passwords for internal XMPP components on first run
+    if grep -q "__JICOFO_AUTH_PASSWORD__" jitsi/.env.meet; then
+        JICOFO_AUTH_PASSWORD="$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9' | head -c 48)"
+        sed -i "s|__JICOFO_AUTH_PASSWORD__|$JICOFO_AUTH_PASSWORD|g" jitsi/.env.meet
+    fi
+
+    if grep -q "__JVB_AUTH_PASSWORD__" jitsi/.env.meet; then
+        JVB_AUTH_PASSWORD="$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9' | head -c 48)"
+        sed -i "s|__JVB_AUTH_PASSWORD__|$JVB_AUTH_PASSWORD|g" jitsi/.env.meet
+    fi
+
+    success "Jitsi Meet env patched."
+else
+    log "jitsi/.env.meet not found; skipping Jitsi configuration (no Jitsi deployment)."
+fi
+
+log "Bringing up core stack + Jitsi (docker-compose + Jitsi overlay)..."
+docker compose -f docker-compose.yaml -f jitsi/docker-compose.jitsi.yaml up -d
 
 ### --- POST-DEPLOY: LDAP Outpost Token + Stalwart Admin Promotion ---
 
@@ -506,8 +536,10 @@ success "Nextcloud OIDC configuration complete."
 
 log "Setting up Nextcloud apps..."
 docker exec --user www-data nextcloud php occ app:disable twofactor_totp
-docker exec --user www-data nextcloud php occ app:enable files_accesscontrol files_retention calendar richdocumentscode contacts mail richdocuments deck groupfolders whiteboard collectives tables
-success "Nextcloud apps setup complete."
+docker exec --user www-data nextcloud php occ app:enable files_accesscontrol files_retention calendar richdocumentscode contacts mail richdocuments deck groupfolders whiteboard collectives tables jitsi
+log "Configuring Nextcloud Jitsi integration..."
+docker exec --user www-data nextcloud php occ config:app:set --value="https://meet.${domain}/" jitsi jitsi_server_url
+success "Nextcloud apps setup complete (including Jitsi integration)."
 
 log "Configuring Nextcloud to send mail via noreply@${domain} (Stalwart SMTP)..."
 docker exec --user www-data nextcloud php occ config:system:set mail_smtpmode --value=smtp
