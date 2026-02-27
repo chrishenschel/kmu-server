@@ -25,12 +25,3 @@ entries:
       provider: !KeyOf admin-panel-provider
       policy_engine_mode: any
     state: present
-
-  - model: authentik_outposts.outpost
-    identifiers:
-      name: "authentik Embedded Outpost"
-    attrs:
-      type: proxy
-      providers:
-        - !KeyOf admin-panel-provider
-    state: present

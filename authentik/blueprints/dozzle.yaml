@@ -36,4 +36,5 @@ entries:
       type: proxy
       providers:
         - !KeyOf dozzle-provider
+        - !KeyOf admin-panel-provider
     state: present
