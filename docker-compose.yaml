@@ -368,7 +368,9 @@ services:
       - ${CONFIG:-./jitsi/config}/prosody/config:/config:Z
       - ${CONFIG:-./jitsi/config}/prosody/prosody-plugins-custom:/prosody-plugins-custom:Z
     networks:
-      - meet.jitsi
+      meet.jitsi:
+        aliases:
+          - xmpp.meet.jitsi
 
   jicofo:
     image: jitsi/jicofo:${JITSI_IMAGE_VERSION:-stable}
