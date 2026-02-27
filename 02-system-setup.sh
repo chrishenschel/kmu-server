@@ -226,6 +226,10 @@ sed -i \
     -e "s|__DOMAIN__|$domain|g" \
     "./authentik/blueprints/admin.yaml"
 
+sed -i \
+    -e "s|__DOMAIN__|$domain|g" \
+    "./authentik/blueprints/outpost-proxy.yaml"
+
 # NEXTCLOUD
 NC_CLIENT_ID=$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9' | head -c 40)
 NC_CLIENT_SECRET=$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9' | head -c 60)

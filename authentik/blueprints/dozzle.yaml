@@ -27,14 +27,3 @@ entries:
       provider: !KeyOf dozzle-provider
       policy_engine_mode: any
     state: present
-
-  # 3. Link provider to the Embedded Outpost
-  - model: authentik_outposts.outpost
-    identifiers:
-      name: "authentik Embedded Outpost"
-    attrs:
-      type: proxy
-      providers:
-        - !KeyOf dozzle-provider
-        - !KeyOf admin-panel-provider
-    state: present
