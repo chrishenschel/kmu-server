@@ -12,6 +12,12 @@ services:
       - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
     networks:
       - caddy-proxy
+    healthcheck:
+      test: [ "CMD-SHELL", "wget -q --spider http://localhost:2019/config/ || exit 1" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
   postgres:
     env_file:
       - .env
@@ -62,6 +68,12 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock:ro
     networks:
       - caddy-proxy
+    healthcheck:
+      test: [ "CMD-SHELL", "wget -q --spider http://localhost:8080/ || exit 1" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
 
   authentikserver:
     image: ghcr.io/goauthentik/server:2025.12.4
@@ -195,6 +207,12 @@ services:
     networks:
       - caddy-proxy
       - database
+    healthcheck:
+      test: [ "CMD-SHELL", "wget -q --spider http://localhost:8080/login || exit 1" ]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
 
   ## Nextcloud
   nextcloud:
@@ -224,6 +242,12 @@ services:
     networks:
       - caddy-proxy
       - database
+    healthcheck:
+      test: [ "CMD-SHELL", "wget -q --spider http://localhost/status.php || exit 1" ]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
 
   ## User sync (Authentik -> Stalwart)
   user-sync:
@@ -246,6 +270,22 @@ services:
       - stalwart
     networks:
       - caddy-proxy
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >
+          python - << 'PY'
+          import sys, urllib.request
+          try:
+              urllib.request.urlopen("http://authentik-server:9000/-/health/live/", timeout=5)
+              sys.exit(0)
+          except Exception:
+              sys.exit(1)
+          PY
+      interval: 60s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
 
   ## Admin panel (user management; protected by Authentik)
   admin-panel:
@@ -282,6 +322,12 @@ services:
       - no-new-privileges:true
     volumes:
       - ./static/html:/usr/share/nginx/html:ro
+    healthcheck:
+      test: [ "CMD-SHELL", "wget -q --spider http://localhost/ || exit 1" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
 
 volumes:
   database:

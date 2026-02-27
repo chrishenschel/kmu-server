@@ -206,7 +206,8 @@
 
     function openDeleteModal(e) {
       document.getElementById('deleteConfirmBtn').dataset.uuid = e.target.dataset.uuid;
-      document.getElementById('deleteConfirmText').textContent = 'Are you sure you want to delete user “‘ + e.target.dataset.username + '”? This cannot be undone.';
+      document.getElementById('deleteConfirmText').textContent =
+        `Are you sure you want to delete user "${e.target.dataset.username}"? This cannot be undone.`;
       document.getElementById('deleteModal').classList.add('show');
     }
 
