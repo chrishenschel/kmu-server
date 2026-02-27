@@ -218,6 +218,7 @@ services:
       - NEXTCLOUD_TRUSTED_DOMAINS=cloud.${DOMAIN}
       - OVERWRITEPROTOCOL=https
       - OVERWRITECLIURL=https://cloud.${DOMAIN}
+      - FC_NO_CACHE=1
     networks:
       - caddy-proxy
       - database
