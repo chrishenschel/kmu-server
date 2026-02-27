@@ -280,6 +280,17 @@ if [ -f jitsi/.env.meet ]; then
         sed -i "s|__JVB_AUTH_PASSWORD__|$JVB_AUTH_PASSWORD|g" jitsi/.env.meet
     fi
 
+    # Auto-detect public IP for JVB so browsers can reach it for media
+    if grep -q "__JVB_ADVERTISE_IPS__" jitsi/.env.meet; then
+        JVB_PUBLIC_IP=$(curl -4 -sf https://api.ipify.org || curl -4 -sf https://ifconfig.me || echo "")
+        if [ -n "$JVB_PUBLIC_IP" ]; then
+            sed -i "s|__JVB_ADVERTISE_IPS__|$JVB_PUBLIC_IP|g" jitsi/.env.meet
+            success "JVB will advertise public IP: $JVB_PUBLIC_IP"
+        else
+            log "Could not auto-detect public IP; set JVB_ADVERTISE_IPS manually in jitsi/.env.meet"
+        fi
+    fi
+
     # Generate TURN credentials for coturn + Jitsi on first run
     if grep -q "__TURN_USER__" jitsi/.env.meet; then
         TURN_USER="jitsi-$(head -c 50 /dev/urandom | tr -dc 'a-zA-Z0-9' | head -c 8)"
