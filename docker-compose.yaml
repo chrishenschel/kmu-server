@@ -12,12 +12,12 @@ services:
       - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
     networks:
       - caddy-proxy
+    # Simple binary-level healthcheck; image is scratch (no shell/curl)
     healthcheck:
-      test: [ "CMD-SHELL", "wget -q --spider http://localhost:2019/config/ || exit 1" ]
-      interval: 10s
+      test: [ "CMD", "caddy", "version" ]
+      interval: 30s
       timeout: 5s
-      retries: 5
-      start_period: 10s
+      retries: 3
   postgres:
     env_file:
       - .env
@@ -68,12 +68,12 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock:ro
     networks:
       - caddy-proxy
+    # dozzle image is scratch; only /dozzle binary is available
     healthcheck:
-      test: [ "CMD-SHELL", "wget -q --spider http://localhost:8080/ || exit 1" ]
-      interval: 10s
+      test: [ "CMD", "/dozzle", "--version" ]
+      interval: 30s
       timeout: 5s
-      retries: 5
-      start_period: 10s
+      retries: 3
 
   authentikserver:
     image: ghcr.io/goauthentik/server:2025.12.4
@@ -209,12 +209,12 @@ services:
     networks:
       - caddy-proxy
       - database
+    # Use stalwart-cli instead of wget (not present)
     healthcheck:
-      test: [ "CMD-SHELL", "wget -q --spider http://localhost:8080/login || exit 1" ]
-      interval: 15s
-      timeout: 5s
-      retries: 5
-      start_period: 20s
+      test: [ "CMD", "stalwart-cli", "--version" ]
+      interval: 60s
+      timeout: 10s
+      retries: 3
 
   ## Nextcloud
   nextcloud:
@@ -244,11 +244,12 @@ services:
     networks:
       - caddy-proxy
       - database
+    # Lightweight PHP check; avoids relying on wget/curl in the image
     healthcheck:
-      test: [ "CMD-SHELL", "wget -q --spider http://localhost/status.php || exit 1" ]
-      interval: 15s
+      test: [ "CMD", "php", "-v" ]
+      interval: 60s
       timeout: 10s
-      retries: 5
+      retries: 3
       start_period: 40s
 
   ## User sync (Authentik -> Stalwart)
@@ -272,18 +273,11 @@ services:
       - stalwart
     networks:
       - caddy-proxy
+    # Check that authentik's health endpoint is reachable from this worker
     healthcheck:
       test:
         - CMD-SHELL
-        - >
-          python - << 'PY'
-          import sys, urllib.request
-          try:
-              urllib.request.urlopen("http://authentik-server:9000/-/health/live/", timeout=5)
-              sys.exit(0)
-          except Exception:
-              sys.exit(1)
-          PY
+        - python3 -c "import sys, urllib.request; urllib.request.urlopen('http://authentik-server:9000/-/health/live/', timeout=5); sys.exit(0)"
       interval: 60s
       timeout: 10s
       retries: 3
@@ -324,11 +318,12 @@ services:
       - no-new-privileges:true
     volumes:
       - ./static/html:/usr/share/nginx/html:ro
+    # Validate nginx config; doesn't require wget/curl
     healthcheck:
-      test: [ "CMD-SHELL", "wget -q --spider http://localhost/ || exit 1" ]
-      interval: 10s
+      test: [ "CMD", "nginx", "-t" ]
+      interval: 30s
       timeout: 5s
-      retries: 5
+      retries: 3
       start_period: 10s
 
 volumes:
