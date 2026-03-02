@@ -11,6 +11,13 @@ function create_user_and_database() {
         CREATE DATABASE $database;
         GRANT ALL PRIVILEGES ON DATABASE $database TO $database;
 EOSQL
+  # Immich requires the vector extension for smart search / face recognition
+  if [ "$database" = "immich" ]; then
+    echo "  Enabling vector extension for Immich"
+    psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$database" <<-EOSQL
+          CREATE EXTENSION IF NOT EXISTS vector;
+EOSQL
+  fi
 }
 
 if [ -n "${POSTGRES_MULTIPLE_DATABASES:-}" ]; then
