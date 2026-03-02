@@ -200,6 +200,7 @@ services:
       - ./caddy/data:/opt/stalwart/caddy-data:ro
     ports:
       - "25:25" # SMTP
+      - "587:587" # Submission (STARTTLS)
       - "465:465" # SMTPS
       - "993:993" # IMAPS
     depends_on:

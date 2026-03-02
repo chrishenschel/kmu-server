@@ -5,6 +5,10 @@ hostname = "mail.__DOMAIN__"
 bind = "[::]:25"
 protocol = "smtp"
 
+[server.listener.submission]
+bind = "[::]:587"
+protocol = "smtp"
+
 [server.listener.smtps]
 bind = "[::]:465"
 protocol = "smtp"
@@ -93,6 +97,10 @@ enable = true
 [authentication.fallback-admin]
 user = "admin"
 secret = "__BIND_PASSWORD__"
+
+# Use LDAP directory to validate local recipients (required for accepting mail to local users)
+[session.rcpt]
+directory = "authentik"
 
 [session]
 auth-mechanisms = ["plain"]
