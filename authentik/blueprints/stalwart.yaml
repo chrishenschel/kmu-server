@@ -4,6 +4,16 @@ metadata:
   labels:
     type: custom
 entries:
+  # Group: users in this group are visible to Stalwart via LDAP (search_group)
+  - model: authentik_core.group
+    id: stalwart-mail-users-group
+    identifiers:
+      name: Stalwart Mail Users
+    attrs:
+      name: Stalwart Mail Users
+      is_superuser_group: false
+    state: present
+
   # 1. LDAP Provider
   - model: authentik_providers_ldap.ldapprovider
     id: stalwart-ldap-provider
@@ -15,7 +25,7 @@ entries:
       bind_mode: cached
       authorization_flow: !Find [authentik_flows.flow, [slug, "default-authentication-flow"]]
       invalidation_flow: !Find [authentik_flows.flow, [slug, "default-provider-invalidation-flow"]]
-      search_group: !Find [authentik_core.group, [name, "authentik Admins"]]
+      search_group: !KeyOf stalwart-mail-users-group
     state: present
 
   # 2. Application

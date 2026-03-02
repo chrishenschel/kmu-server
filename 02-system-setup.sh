@@ -525,6 +525,25 @@ else
             else
                 log "noreply set_password note: $PW_RESULT"
             fi
+            # Add noreply to Stalwart Mail Users so the mailbox is visible via LDAP
+            STALWART_GROUP_UUID=$(curl -ks -s -H "Authorization: Bearer $AUTHENTIK_BOOTSTRAP_TOKEN" \
+                "$AUTH_URL/api/v3/core/groups/?search=Stalwart%20Mail%20Users&page_size=10" | \
+                python3 -c "
+import sys, json
+d = json.load(sys.stdin)
+for g in d.get('results', []):
+    if g.get('name') == 'Stalwart Mail Users':
+        print(g.get('uuid', ''))
+        break
+" 2>/dev/null)
+            if [ -n "$STALWART_GROUP_UUID" ]; then
+                curl -ks -X POST \
+                    -H "Authorization: Bearer $AUTHENTIK_BOOTSTRAP_TOKEN" \
+                    -H "Content-Type: application/json" \
+                    -d "{\"pk\": $NOREPLY_PK}" \
+                    "$AUTH_URL/api/v3/core/groups/$STALWART_GROUP_UUID/add_user/" >/dev/null 2>&1 && \
+                    success "noreply added to Stalwart Mail Users (mailbox visible via LDAP)." || true
+            fi
         else
             log "Could not get noreply user pk from response."
         fi
@@ -532,6 +551,30 @@ else
         log "noreply user already exists in Authentik; reusing NOREPLY_MAIL_PASSWORD from .env if set."
         [ -f .env ] && set -a && source .env && set +a
         NOREPLY_PASS="${NOREPLY_MAIL_PASSWORD:-$NOREPLY_PASS}"
+        # Ensure noreply is in Stalwart Mail Users so mailbox is visible via LDAP
+        NOREPLY_PK=$(curl -ks -s -H "Authorization: Bearer $AUTHENTIK_BOOTSTRAP_TOKEN" \
+            "$AUTH_URL/api/v3/core/users/?username=noreply&page_size=1" | \
+            python3 -c "import sys,json; d=json.load(sys.stdin); r=d.get('results',[]); print(r[0].get('pk','') if r else '')" 2>/dev/null)
+        if [ -n "$NOREPLY_PK" ]; then
+            STALWART_GROUP_UUID=$(curl -ks -s -H "Authorization: Bearer $AUTHENTIK_BOOTSTRAP_TOKEN" \
+                "$AUTH_URL/api/v3/core/groups/?search=Stalwart%20Mail%20Users&page_size=10" | \
+                python3 -c "
+import sys, json
+d = json.load(sys.stdin)
+for g in d.get('results', []):
+    if g.get('name') == 'Stalwart Mail Users':
+        print(g.get('uuid', ''))
+        break
+" 2>/dev/null)
+            if [ -n "$STALWART_GROUP_UUID" ]; then
+                curl -ks -X POST \
+                    -H "Authorization: Bearer $AUTHENTIK_BOOTSTRAP_TOKEN" \
+                    -H "Content-Type: application/json" \
+                    -d "{\"pk\": $NOREPLY_PK}" \
+                    "$AUTH_URL/api/v3/core/groups/$STALWART_GROUP_UUID/add_user/" >/dev/null 2>&1 && \
+                    success "noreply added to Stalwart Mail Users." || true
+            fi
+        fi
     else
         log "noreply creation note: $CREATE_RESULT"
     fi

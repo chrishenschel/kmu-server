@@ -22,6 +22,7 @@ url = "https://mail.__DOMAIN__"
 use-proxy-headers = true
 
 [certificate.default]
+default = true
 cert = "%{file:/opt/stalwart/caddy-data/caddy/certificates/acme-v02.api.letsencrypt.org-directory/mail.__DOMAIN__/mail.__DOMAIN__.crt}%"
 private-key = "%{file:/opt/stalwart/caddy-data/caddy/certificates/acme-v02.api.letsencrypt.org-directory/mail.__DOMAIN__/mail.__DOMAIN__.key}%"
 

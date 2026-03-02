@@ -67,6 +67,9 @@ def get_stalwart_users():
     return api_get(url, headers)
 
 
+LDAP_DIRECTORY_ERROR = "LDAP directory cannot be managed"
+
+
 def create_stalwart_user(username, email):
     url = f"{STALWART_URL}/api/principal"
     headers = {
@@ -89,6 +92,7 @@ def sync():
         existing = {u["name"] for u in stalwart_data["data"].get("items", [])}
 
     created = 0
+    ldap_only = False  # Stalwart directory is LDAP: principals are read-only from API
     for user in authentik_data["results"]:
         username = user.get("username", "")
         if not username or username == "akadmin":
@@ -101,12 +105,18 @@ def sync():
         if result and "error" not in result:
             print(f"Created mailbox for {username} <{email}>", flush=True)
             created += 1
+        elif result and LDAP_DIRECTORY_ERROR in str(result.get("details", result.get("error", ""))):
+            ldap_only = True
+            # With directory=LDAP, Stalwart does not allow creating principals via API.
+            # Users in Authentik are exposed via LDAP; they can log in to mail with the same credentials.
         else:
             print(f"Skipped {username}: {result}", flush=True)
 
-    if created == 0:
+    if ldap_only and created == 0:
+        print("Stalwart directory is LDAP (read-only). Principals are managed in Authentik; users can log in to mail with their Authentik credentials.", flush=True)
+    if created == 0 and not ldap_only:
         print(f"All {len(existing)} user(s) already synced.", flush=True)
-    else:
+    elif created > 0:
         print(f"Synced {created} new mailbox(es).", flush=True)
 
 

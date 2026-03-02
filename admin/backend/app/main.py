@@ -26,6 +26,8 @@ NEXTCLOUD_CONTAINER = os.environ.get("NEXTCLOUD_CONTAINER_NAME", "nextcloud")
 
 # Authentik admin group name (used for "set as admin" toggle)
 ADMIN_GROUP_NAME = os.environ.get("AUTHENTIK_ADMIN_GROUP_NAME", "authentik Admins")
+# Group whose members are visible to Stalwart via LDAP (search_group)
+STALWART_MAIL_USERS_GROUP = os.environ.get("STALWART_MAIL_USERS_GROUP", "Stalwart Mail Users")
 
 # Skip TLS verify for internal services
 SSL_CTX = ssl.create_default_context()
@@ -95,6 +97,21 @@ async def _get_admin_group_member_pks(client: httpx.AsyncClient) -> set[int]:
                 out.add(int(pk))
         break
     return out
+
+
+async def _get_stalwart_mail_users_group_uuid(client: httpx.AsyncClient) -> str | None:
+    """Return the uuid of the group named STALWART_MAIL_USERS_GROUP, or None."""
+    r = await client.get(
+        f"{AUTHENTIK_URL}/api/v3/core/groups/",
+        params={"search": STALWART_MAIL_USERS_GROUP, "page_size": 10},
+        headers=auth_headers(),
+    )
+    if r.status_code != 200:
+        return None
+    for g in r.json().get("results", []):
+        if g.get("name") == STALWART_MAIL_USERS_GROUP:
+            return g.get("uuid")
+    return None
 
 
 def stalwart_auth():
@@ -269,7 +286,20 @@ async def create_user(body: UserCreate):
                 detail=f"Failed to set password: {set_pw.text}",
             )
 
+        # 2b. Add user to "Stalwart Mail Users" so they are visible to Stalwart via LDAP (search_group)
+        group_uuid = await _get_stalwart_mail_users_group_uuid(client)
+        if group_uuid and user_pk is not None:
+            add_grp = await client.post(
+                f"{AUTHENTIK_URL}/api/v3/core/groups/{group_uuid}/add_user/",
+                json={"pk": user_pk},
+                headers={**auth_headers(), "Content-Type": "application/json"},
+            )
+            if add_grp.status_code not in (200, 204):
+                pass  # non-fatal: user can be added to group manually in Authentik
+
         # 3. Create mailbox in Stalwart (so no wait for user-sync)
+        stalwart_ok = True
+        stalwart_msg = ""
         if STALWART_ADMIN_PASS:
             stalwart_payload = {"type": "individual", "name": username, "emails": [email]}
             s = await client.post(
@@ -280,19 +310,31 @@ async def create_user(body: UserCreate):
                     "Content-Type": "application/json",
                 },
             )
-            if s.status_code not in (200, 201) and "already exists" not in (s.text or "").lower():
-                # Non-fatal: user-sync will create it later
-                pass
+            if s.status_code in (200, 201) or "already exists" in (s.text or "").lower():
+                stalwart_ok = True
+            else:
+                stalwart_ok = False
+                stalwart_msg = f"Stalwart mailbox: {s.status_code} {s.text or ''}"
+        else:
+            stalwart_ok = False
+            stalwart_msg = "STALWART_ADMIN_PASS not set"
 
     # 4. Create Nextcloud Mail account with the same password (so user doesn't type it)
     nc_ok, nc_msg = create_nextcloud_mail_account(username, email, password)
     if not nc_ok:
         nc_msg = f"Nextcloud Mail: {nc_msg} (user can add account manually with this password)."
 
+    msg = f"User '{username}' created. Mailbox at {email}."
+    if not stalwart_ok:
+        msg += f" Stalwart mailbox was not created: {stalwart_msg}. Check admin panel env STALWART_ADMIN_PASS matches Stalwart admin password (config.toml fallback-admin), or wait for user-sync to create it."
+    if nc_ok:
+        msg += " Nextcloud Mail account created with this password."
+    else:
+        msg += " " + nc_msg
+
     return {
         "ok": True,
-        "message": f"User '{username}' created. Mailbox at {email}. "
-        + ("Nextcloud Mail account created with this password." if nc_ok else nc_msg),
+        "message": msg,
         "user": {"username": username, "name": name, "email": email},
     }
 
