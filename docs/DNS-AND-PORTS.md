@@ -16,6 +16,7 @@ Point these hostnames at your server’s public IP:
 | `element.example.com` | Element Web client |
 | `cloud.example.com` | Nextcloud |
 | `logs.example.com` | Dozzle (Docker logs) |
+| `start.example.com` | Start page (authenticated hub) |
 | `admin.example.com` | Admin panel |
 | `meet.example.com` | Jitsi Meet |
 | `turn.example.com` | TURN server (Jitsi/coturn) |

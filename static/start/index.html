@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Company Hub</title>
+    <!-- Fonts & Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    
+    <style>
+        :root {
+            --bg-gradient: linear-gradient(135deg, #1a1c2c 0%, #4a192c 100%);
+            --glass-bg: rgba(255, 255, 255, 0.07);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --text-main: #ffffff;
+            --text-dim: #b0b0b0;
+            --accent: #4cc9f0;
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-gradient);
+            background-attachment: fixed;
+            color: var(--text-main);
+            margin: 0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 40px 20px;
+        }
+
+        /* Top Bar: Logo & Weather */
+        .top-nav {
+            width: 100%;
+            max-width: 1100px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 50px;
+        }
+
+        .company-logo {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        /* Placeholder Logo Styling */
+        .logo-icon {
+            width: 50px;
+            height: 50px;
+            background: var(--accent);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 24px;
+            box-shadow: 0 0 20px rgba(76, 201, 240, 0.4);
+        }
+
+        .logo-text {
+            font-size: 1.5rem;
+            font-weight: 600;
+            letter-spacing: -0.5px;
+        }
+
+        /* Weather Widget */
+        .weather-container {
+            min-width: 250px;
+            background: var(--glass-bg);
+            padding: 10px 20px;
+            border-radius: 15px;
+            border: 1px solid var(--glass-border);
+        }
+
+        /* Main Content */
+        .hero {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        #clock {
+            font-size: 4rem;
+            font-weight: 300;
+            margin: 0;
+            letter-spacing: -2px;
+        }
+
+        #greeting {
+            color: var(--text-dim);
+            font-size: 1.2rem;
+            margin-top: 5px;
+        }
+
+        #greeting .quote {
+            font-style: italic;
+            font-weight: 400;
+        }
+
+        #greeting .quote-author {
+            display: block;
+            margin-top: 6px;
+            font-size: 0.95rem;
+            opacity: 0.85;
+        }
+
+        /* Search Bar */
+        .search-wrapper {
+            width: 100%;
+            max-width: 600px;
+            position: relative;
+            margin-bottom: 60px;
+        }
+
+        .search-wrapper i {
+            position: absolute;
+            left: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-dim);
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 18px 20px 18px 55px;
+            border-radius: 50px;
+            border: 1px solid var(--glass-border);
+            background: var(--glass-bg);
+            color: white;
+            font-size: 1.1rem;
+            backdrop-filter: blur(10px);
+            outline: none;
+            transition: var(--transition);
+        }
+
+        .search-input:focus {
+            background: rgba(255, 255, 255, 0.12);
+            border-color: var(--accent);
+            box-shadow: 0 0 30px rgba(76, 201, 240, 0.2);
+        }
+
+        /* Apps Grid */
+        .app-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 20px;
+            width: 100%;
+            max-width: 1100px;
+        }
+
+        .app-card {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            padding: 30px 20px;
+            border-radius: 20px;
+            text-decoration: none;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            backdrop-filter: blur(5px);
+            transition: var(--transition);
+        }
+
+        .app-card:hover {
+            transform: translateY(-8px);
+            background: rgba(255, 255, 255, 0.15);
+            border-color: var(--accent);
+        }
+
+        .app-card i {
+            font-size: 2rem;
+            margin-bottom: 15px;
+            color: var(--accent);
+        }
+
+        .app-card span {
+            font-size: 0.9rem;
+            font-weight: 500;
+            text-align: center;
+        }
+
+        /* Admin view toggle */
+        .view-toggle {
+            display: none;
+            align-items: center;
+            gap: 10px;
+        }
+        .view-toggle.visible {
+            display: flex;
+        }
+        .view-toggle-btn {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            color: var(--text-dim);
+            padding: 8px 16px;
+            border-radius: 10px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+        .view-toggle-btn:hover {
+            color: var(--accent);
+            border-color: var(--accent);
+        }
+        .view-toggle-btn.active {
+            background: rgba(76, 201, 240, 0.2);
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+        /* User apps = default; admin grid hidden until admin view */
+        #app-grid-admin {
+            display: none;
+        }
+        body.admin-view #app-grid-user {
+            display: none;
+        }
+        body.admin-view #app-grid-admin {
+            display: grid;
+        }
+
+        /* Responsive */
+        @media (max-width: 900px) {
+            .app-grid { grid-template-columns: repeat(3, 1fr); }
+        }
+        @media (max-width: 600px) {
+            .app-grid { grid-template-columns: repeat(2, 1fr); }
+            .top-nav { flex-direction: column; gap: 20px; }
+        }
+    </style>
+</head>
+<body>
+
+    <nav class="top-nav">
+        <div class="company-logo">
+            <div class="logo-icon">C</div>
+            <div class="logo-text">Company<span>Pulse</span></div>
+        </div>
+
+        <div class="view-toggle" id="view-toggle" aria-hidden="true">
+            <button type="button" class="view-toggle-btn" id="view-btn-user" aria-pressed="true">Start</button>
+            <button type="button" class="view-toggle-btn" id="view-btn-admin" aria-pressed="false">Admin</button>
+        </div>
+        
+        <div class="weather-container">
+            <!-- Custom Weather (Replace with your city URL) -->
+            <a class="weatherwidget-io" href="https://forecast7.com/en/40d71n74d01/new-york/" data-label_1="Arbeit" data-label_2="Wetter" data-font="Roboto" data-icons="Climacons Animated" data-mode="Current" data-theme="pure" data-basecolor="" data-textcolor="#ffffff" >WEATHER</a>
+            <script>
+            !function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0];if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src='https://weatherwidget.io/js/widget.min.js';fjs.parentNode.insertBefore(js,fjs);}}(document,'script','weatherwidget-io-js');
+            </script>
+        </div>
+    </nav>
+
+    <div class="hero">
+        <h1 id="clock">00:00</h1>
+        <div id="greeting"><span class="quote">Lade …</span></div>
+    </div>
+
+    <div class="search-wrapper">
+        <i class="fas fa-search"></i>
+        <form action="https://www.google.de/search" method="GET">
+            <input type="text" name="q" class="search-input" placeholder="Google Suche..." autocomplete="off">
+        </form>
+    </div>
+
+    <div class="app-grid" id="app-grid-user">
+        <!-- User-facing apps -->
+        <a href="#" class="app-card" data-app="element" data-label="Element"><i class="fas fa-comment-dots"></i><span>Element</span></a>
+        <a href="#" class="app-card" data-app="cloud" data-label="Nextcloud"><i class="fas fa-cloud"></i><span>Nextcloud</span></a>
+        <a href="#" class="app-card" data-app="meet" data-label="Jitsi Meet"><i class="fas fa-video"></i><span>Jitsi Meet</span></a>
+        <a href="#" class="app-card" data-app="vaultwarden" data-label="Vaultwarden"><i class="fas fa-key"></i><span>Vaultwarden</span></a>
+        <a href="#" class="app-card" data-app="immich" data-label="Immich"><i class="fas fa-images"></i><span>Immich</span></a>
+    </div>
+
+    <div class="app-grid" id="app-grid-admin">
+        <!-- Admin apps (shown when Admin view is active) -->
+        <a href="#" class="app-card" data-app="admin" data-label="Admin"><i class="fas fa-cog"></i><span>Admin</span></a>
+        <a href="#" class="app-card" data-app="auth" data-label="Authentik"><i class="fas fa-shield-halved"></i><span>Authentik</span></a>
+        <a href="#" class="app-card" data-app="mail" data-label="Mail"><i class="fas fa-envelope"></i><span>Mail</span></a>
+        <!-- <a href="#" class="app-card" data-app="matrix" data-label="Matrix"><i class="fas fa-comments"></i><span>Matrix</span></a> -->
+        <a href="#" class="app-card" data-app="logs" data-label="Logs"><i class="fas fa-terminal"></i><span>Logs</span></a>
+    </div>
+
+    <script>
+        // German motivational quotes – one per day (stable by day-of-year)
+        const GERMAN_QUOTES = [
+            { q: "Der Weg ist das Ziel.", a: "Konfuzius" },
+            { q: "Beginne jetzt, nicht morgen. Morgen ist der häufigste Tag der Welt.", a: "Unbekannt" },
+            { q: "Du musst die Quelle ändern, nicht das Symptom.", a: "Albert Einstein" },
+            { q: "Wer nicht wagt, der nicht gewinnt.", a: "Sprichwort" },
+            { q: "Jeder Tag ist eine neue Chance, es besser zu machen.", a: "Unbekannt" },
+            { q: "Erfolg ist die Summe kleiner Anstrengungen, jeden Tag wiederholt.", a: "Robert Collier" },
+            { q: "Der beste Zeitpunkt, einen Baum zu pflanzen, war vor 20 Jahren. Der zweitbeste ist jetzt.", a: "Sprichwort" },
+            { q: "Was du heute kannst besorgen, das verschiebe nicht auf morgen.", a: "Sprichwort" },
+            { q: "Steter Tropfen höhlt den Stein.", a: "Ovid" },
+            { q: "Wer aufhört, besser zu werden, hat aufgehört, gut zu sein.", a: "Philip Rosenthal" },
+            { q: "Mut steht am Anfang des Handelns, Glück am Ende.", a: "Demokrit" },
+            { q: "Nicht weil es schwer ist, wagen wir es nicht. Wir wagen es nicht, weil es schwer ist.", a: "Seneca" },
+            { q: "Tue erst das Nötige, dann das Mögliche, und plötzlich schaffst du das Unmögliche.", a: "Franz von Assisi" },
+            { q: "Der Kopf ist rund, damit das Denken die Richtung wechseln kann.", a: "Francis Picabia" },
+            { q: "Es ist nicht genug zu wissen – man muss auch anwenden. Es ist nicht genug zu wollen – man muss auch tun.", a: "Johann Wolfgang von Goethe" },
+            { q: "Wer kämpft, kann verlieren. Wer nicht kämpft, hat schon verloren.", a: "Bertolt Brecht" },
+            { q: "Qualität ist keine Handlung, sondern eine Gewohnheit.", a: "Aristoteles" },
+            { q: "Der Anfang ist die Hälfte des Ganzen.", a: "Aristoteles" },
+            { q: "Lass dich nicht von deiner Vergangenheit definieren. Nimm sie nur als Sprungbrett.", a: "Unbekannt" },
+            { q: "Kleine Schritte führen auch zum Ziel.", a: "Unbekannt" },
+            { q: "Du bist stärker als du denkst.", a: "Unbekannt" },
+            { q: "Jeder Meister war einmal ein Anfänger.", a: "Robin Sharma" },
+            { q: "Erfolg ist nicht endgültig, Misserfolg nicht tödlich. Es kommt auf den Mut an, weiterzumachen.", a: "Winston Churchill" },
+            { q: "Tue jeden Tag etwas, das dich deinem Ziel näherbringt.", a: "Unbekannt" },
+            { q: "Aus Fehlern wird man klug.", a: "Sprichwort" },
+            { q: "Wer immer tut, was er schon kann, bleibt immer das, was er schon ist.", a: "Henry Ford" },
+            { q: "Der Unterschied zwischen dem Guten und dem Großen ist oft nur eine Extra-Meile.", a: "Unbekannt" },
+            { q: "Vertraue dem Prozess.", a: "Unbekannt" },
+            { q: "Heute ist ein guter Tag für einen guten Tag.", a: "Unbekannt" },
+            { q: "Sei die Veränderung, die du in der Welt sehen möchtest.", a: "Mahatma Gandhi" },
+        ];
+
+        function getQuoteOfTheDay() {
+            const now = new Date();
+            const start = new Date(now.getFullYear(), 0, 0);
+            const diff = now - start;
+            const dayOfYear = Math.floor(diff / (1000 * 60 * 60 * 24));
+            const index = dayOfYear % GERMAN_QUOTES.length;
+            return GERMAN_QUOTES[index];
+        }
+
+        function updateDashboard() {
+            const now = new Date();
+
+            // Update Clock
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            document.getElementById('clock').textContent = `${hours}:${minutes}`;
+
+            // Daily German quote (set once per page load, stable for the day)
+            const greetingEl = document.getElementById('greeting');
+            if (!greetingEl.dataset.quoteSet) {
+                const { q, a } = getQuoteOfTheDay();
+                greetingEl.innerHTML = `<span class="quote">„${q}"</span><span class="quote-author">— ${a}</span>`;
+                greetingEl.dataset.quoteSet = '1';
+            }
+        }
+
+        setInterval(updateDashboard, 1000);
+        updateDashboard();
+
+        // Set app links from current domain (matches Caddyfile: auth.*, mail.*, etc.)
+        (function () {
+            var hostname = document.location.hostname;
+            var domain = hostname.replace(/^www\./, '') || hostname;
+            document.querySelectorAll('.app-card[data-app]').forEach(function (a) {
+                a.href = 'https://' + a.getAttribute('data-app') + '.' + domain;
+                a.setAttribute('target', '_blank');
+                a.setAttribute('rel', 'noopener noreferrer');
+            });
+        })();
+
+        // Admin view toggle (persisted in localStorage); only shown when user is in Authentik admin group
+        (function () {
+            var STORAGE_KEY = 'start-page-view';
+            var body = document.body;
+            var viewToggle = document.getElementById('view-toggle');
+            var btnUser = document.getElementById('view-btn-user');
+            var btnAdmin = document.getElementById('view-btn-admin');
+
+            function setView(isAdmin) {
+                if (isAdmin) {
+                    body.classList.add('admin-view');
+                    btnUser.classList.remove('active');
+                    btnUser.setAttribute('aria-pressed', 'false');
+                    btnAdmin.classList.add('active');
+                    btnAdmin.setAttribute('aria-pressed', 'true');
+                    try { localStorage.setItem(STORAGE_KEY, 'admin'); } catch (e) {}
+                } else {
+                    body.classList.remove('admin-view');
+                    btnUser.classList.add('active');
+                    btnUser.setAttribute('aria-pressed', 'true');
+                    btnAdmin.classList.remove('active');
+                    btnAdmin.setAttribute('aria-pressed', 'false');
+                    try { localStorage.setItem(STORAGE_KEY, 'user'); } catch (e) {}
+                }
+            }
+
+            function setToggleVisible(visible) {
+                if (visible) {
+                    viewToggle.classList.add('visible');
+                    viewToggle.setAttribute('aria-hidden', 'false');
+                } else {
+                    viewToggle.classList.remove('visible');
+                    viewToggle.setAttribute('aria-hidden', 'true');
+                    setView(false);
+                    try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
+                }
+            }
+
+            var saved = '';
+            try { saved = localStorage.getItem(STORAGE_KEY) || ''; } catch (e) {}
+
+            fetch('/auth-check', { credentials: 'include' })
+                .then(function (r) {
+                    if (!r.ok) { setToggleVisible(false); setView(false); return; }
+                    var groups = r.headers.get('X-Authentik-Groups') || '';
+                    var isAdmin = groups.toLowerCase().indexOf('admin') !== -1;
+                    setToggleVisible(isAdmin);
+                    if (isAdmin) setView(saved === 'admin');
+                    else setView(false);
+                })
+                .catch(function () {
+                    setToggleVisible(false);
+                    setView(false);
+                });
+
+            btnUser.addEventListener('click', function () { setView(false); });
+            btnAdmin.addEventListener('click', function () { setView(true); });
+        })();
+    </script>
+</body>
+</html>

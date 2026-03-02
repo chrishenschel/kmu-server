@@ -406,7 +406,7 @@ services:
     security_opt:
       - no-new-privileges:true
     volumes:
-      - ./static/html:/usr/share/nginx/html:ro
+      - ./static/www:/usr/share/nginx/html:ro
     # Validate nginx config; doesn't require wget/curl
     healthcheck:
       test: [ "CMD", "nginx", "-t" ]
@@ -414,6 +414,25 @@ services:
       timeout: 5s
       retries: 3
       start_period: 10s
+
+ ## Static hosting
+  startpage:
+    container_name: startpage
+    image: nginx:latest
+    restart: unless-stopped
+    networks:
+      - caddy-proxy
+    security_opt:
+      - no-new-privileges:true
+    volumes:
+      - ./static/start:/usr/share/nginx/html:ro
+    # Validate nginx config; doesn't require wget/curl
+    healthcheck:
+      test: [ "CMD", "nginx", "-t" ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s      
 
   ## Jitsi Meet
   meet-sso:

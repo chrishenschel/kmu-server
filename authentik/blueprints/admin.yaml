@@ -25,3 +25,12 @@ entries:
       provider: !KeyOf admin-panel-provider
       policy_engine_mode: any
     state: present
+
+  # Only admins can access admin.__DOMAIN__
+  - model: authentik_policies.policybinding
+    identifiers:
+      target: !KeyOf admin-panel-app
+      order: 0
+    attrs:
+      group: !Find [authentik_core.group, [name, "authentik Admins"]]
+    state: present
