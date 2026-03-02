@@ -64,12 +64,13 @@ secret = "__BIND_PASSWORD__"
 method = "lookup"
 
 [directory.authentik.filter]
-name = "(cn=?)"
+name = "(|(cn=?)(mail=?))"
 email = "(mail=?)"
 
 [directory.authentik.attributes]
 name = "cn"
 class = "objectClass"
+description = "displayName"
 email = "mail"
 groups = ["memberOf"]
 secret-changed = "mail"
