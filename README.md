@@ -278,7 +278,7 @@ Admin entrypoints (assuming `DOMAIN=ACME.com`):
 - Vaultwarden: `https://vaultwarden.ACME.com` (use “Single sign-on”)
 - Immich: `https://immich.ACME.com` (use “Login with OAuth”)
 
-**First login:** Use the username and password you gave to `02-system-setup.sh`. Log in to Authentik first; then use “Log in with OAuth” or “Single sign-on” for Nextcloud, Vaultwarden, and Immich. Element and Meet use the same Authentik session when behind forward_auth.
+**First login:** Use the username and password you gave to `02-system-setup.sh`. Log in to Authentik first; then use “Log in with OAuth” or “Single sign-on” for Nextcloud, Vaultwarden, and Immich. Element and Meet use the same Authentik session when behind forward_auth. For Immich, the setup script creates a bootstrap admin so the first visit shows the login page (and OAuth) instead of the Admin Registration form; log in with any Authentik user.
 
 ### 11. Contributing / Local development
 
@@ -379,6 +379,7 @@ Generated or used by `02-system-setup.sh` and Compose. **Do not commit `.env`**;
 | Stalwart: LDAP login fails or no mailboxes | LDAP outpost token not set or outpost not running. | Re-run setup until the script prints "Got outpost token"; ensure `LDAP_OUTPOST_TOKEN` in `.env` and `authentik-ldap` container is up. |
 | Vaultwarden: "Use single sign-on" fails or email not verified | Authentik must expose `email_verified: true` for the email scope. | Ensure the Vaultwarden blueprint is applied (custom "Vaultwarden Email Scope" mapping). See [Authentik Vaultwarden integration](https://integrations.goauthentik.io/security/vaultwarden/). |
 | Immich: OAuth not offered or redirect error | Immich OAuth is configured via `immich/immich.json` (issuer URL, client id/secret). | Ensure setup has run so `immich/immich.json` has no `__DOMAIN__`/`__IMMICH_CLIENT_*__` placeholders; or set OAuth in Immich Admin → Settings → OAuth. |
+| Immich: shows "Admin Registration" instead of login / OAuth | Immich shows the first-time admin signup when there are no users. | Create the first user once via API so the login page (and OAuth) is shown. From the server: `curl -sk -X POST "https://immich.<your-domain>/api/auth/sign-up" -H "Content-Type: application/json" -d '{"email":"immich-bootstrap@<your-domain>","name":"Immich Bootstrap","password":"CHANGE_ME_STRONG_PASSWORD"}'`. Use a strong password (you can ignore it afterwards; log in via Authentik). Then reload Immich; the next visit shows the login page and OAuth. |
 
 Useful commands:
 

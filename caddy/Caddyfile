@@ -110,7 +110,7 @@ meet.__DOMAIN__ {
     }
     # Already have JWT (e.g. after meet-sso redirect): serve Jitsi directly to avoid redirect loop
     @with_jwt {
-        query jwt *
+        query jwt=*
     }
     handle @with_jwt {
         reverse_proxy jitsi-web:80
