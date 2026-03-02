@@ -236,6 +236,7 @@
     </style>
 </head>
 <body>
+    <!-- Optional: data-admin-groups="admin,superuser,staff" to control which Authentik groups see the Admin toggle -->
 
     <nav class="top-nav">
         <div class="company-logo">
@@ -354,7 +355,7 @@
         // Set app links from current domain (matches Caddyfile: auth.*, mail.*, etc.)
         (function () {
             var hostname = document.location.hostname;
-            var domain = hostname.replace(/^www\./, '') || hostname;
+            var domain = hostname.replace(/^start\./, '') || hostname;
             document.querySelectorAll('.app-card[data-app]').forEach(function (a) {
                 a.href = 'https://' + a.getAttribute('data-app') + '.' + domain;
                 a.setAttribute('target', '_blank');
@@ -369,6 +370,16 @@
             var viewToggle = document.getElementById('view-toggle');
             var btnUser = document.getElementById('view-btn-user');
             var btnAdmin = document.getElementById('view-btn-admin');
+
+            // Group names (case-insensitive substring match) that show the Admin toggle. Override via data-admin-groups on body.
+            var defaultAdminGroups = ['admin', 'superuser'];
+            var adminGroups = (body.getAttribute('data-admin-groups') || '').trim();
+            var groupList = adminGroups ? adminGroups.split(/\s*,\s*/).map(function (g) { return g.toLowerCase(); }) : defaultAdminGroups;
+
+            function isAdminUser(groupsHeader) {
+                var g = (groupsHeader || '').toLowerCase();
+                return groupList.some(function (name) { return g.indexOf(name) !== -1; });
+            }
 
             function setView(isAdmin) {
                 if (isAdmin) {
@@ -407,7 +418,7 @@
                 .then(function (r) {
                     if (!r.ok) { setToggleVisible(false); setView(false); return; }
                     var groups = r.headers.get('X-Authentik-Groups') || '';
-                    var isAdmin = groups.toLowerCase().indexOf('admin') !== -1;
+                    var isAdmin = isAdminUser(groups);
                     setToggleVisible(isAdmin);
                     if (isAdmin) setView(saved === 'admin');
                     else setView(false);

@@ -6,8 +6,12 @@
     "clientSecret": "__IMMICH_CLIENT_SECRET__",
     "scope": "openid email profile",
     "autoRegister": true,
+    "autoLaunch": true,
     "buttonText": "Login with OAuth",
     "signingAlgorithm": "RS256"
+  },
+  "passwordLogin": {
+    "enabled": false
   },
   "server": {
     "externalDomain": "https://immich.__DOMAIN__"

@@ -108,6 +108,13 @@ meet.__DOMAIN__ {
     handle /outpost.goauthentik.io/* {
         reverse_proxy authentik-server:9000
     }
+    # Already have JWT (e.g. after meet-sso redirect): serve Jitsi directly to avoid redirect loop
+    @with_jwt {
+        query jwt *
+    }
+    handle @with_jwt {
+        reverse_proxy jitsi-web:80
+    }
     # Main page (/) — authenticated users only; meet-sso issues JWT and redirects to /?jwt=
     handle / {
         forward_auth authentik-server:9000 {

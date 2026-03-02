@@ -69,6 +69,7 @@
     },
     "setting_defaults": {
         "UIFeature.registration": false,
-        "UIFeature.passwordReset": false
+        "UIFeature.passwordReset": false,
+        "language": "de-DE"
     }
 }
