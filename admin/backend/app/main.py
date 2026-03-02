@@ -3,6 +3,7 @@ Admin panel backend: manage users in Authentik, Stalwart, and optionally Nextclo
 Protected by Authentik forward auth; only admins should have access.
 """
 import os
+import sys
 import ssl
 from contextlib import asynccontextmanager
 
@@ -99,19 +100,19 @@ async def _get_admin_group_member_pks(client: httpx.AsyncClient) -> set[int]:
     return out
 
 
-async def _get_stalwart_mail_users_group_uuid(client: httpx.AsyncClient) -> str | None:
-    """Return the uuid of the group named STALWART_MAIL_USERS_GROUP, or None."""
+async def _get_stalwart_mail_users_group(client: httpx.AsyncClient) -> tuple[int | None, str | None]:
+    """Return (pk, uuid) of the group named STALWART_MAIL_USERS_GROUP, or (None, None)."""
     r = await client.get(
         f"{AUTHENTIK_URL}/api/v3/core/groups/",
         params={"search": STALWART_MAIL_USERS_GROUP, "page_size": 10},
         headers=auth_headers(),
     )
     if r.status_code != 200:
-        return None
+        return None, None
     for g in r.json().get("results", []):
         if g.get("name") == STALWART_MAIL_USERS_GROUP:
-            return g.get("uuid")
-    return None
+            return g.get("pk"), g.get("uuid")
+    return None, None
 
 
 def stalwart_auth():
@@ -287,15 +288,24 @@ async def create_user(body: UserCreate):
             )
 
         # 2b. Add user to "Stalwart Mail Users" so they are visible to Stalwart via LDAP (search_group)
-        group_uuid = await _get_stalwart_mail_users_group_uuid(client)
-        if group_uuid and user_pk is not None:
+        group_pk, _group_uuid = await _get_stalwart_mail_users_group(client)
+        group_added = False
+        if group_pk is not None and user_pk is not None:
             add_grp = await client.post(
-                f"{AUTHENTIK_URL}/api/v3/core/groups/{group_uuid}/add_user/",
+                f"{AUTHENTIK_URL}/api/v3/core/groups/{group_pk}/add_user/",
                 json={"pk": user_pk},
                 headers={**auth_headers(), "Content-Type": "application/json"},
             )
-            if add_grp.status_code not in (200, 204):
-                pass  # non-fatal: user can be added to group manually in Authentik
+            if add_grp.status_code in (200, 204):
+                group_added = True
+            else:
+                # Log so it appears in docker compose logs admin-panel
+                print(
+                    f"[admin-panel] Failed to add user {username} (pk={user_pk}) to Stalwart Mail Users: "
+                    f"{add_grp.status_code} {add_grp.text}",
+                    file=sys.stderr,
+                    flush=True,
+                )
 
         # 3. Create mailbox in Stalwart (so no wait for user-sync)
         stalwart_ok = True
@@ -325,6 +335,12 @@ async def create_user(body: UserCreate):
         nc_msg = f"Nextcloud Mail: {nc_msg} (user can add account manually with this password)."
 
     msg = f"User '{username}' created. Mailbox at {email}."
+    if group_added:
+        msg += " Added to Stalwart Mail Users (can log in to mail)."
+    elif group_pk is None:
+        msg += " Could not find 'Stalwart Mail Users' group in Authentik; add the user to that group manually so they can log in to Stalwart."
+    else:
+        msg += " Could not add to Stalwart Mail Users (check admin-panel logs); add the user to that group manually in Authentik so they can log in to Stalwart."
     if not stalwart_ok:
         msg += f" Stalwart mailbox was not created: {stalwart_msg}. Check admin panel env STALWART_ADMIN_PASS matches Stalwart admin password (config.toml fallback-admin), or wait for user-sync to create it."
     if nc_ok:

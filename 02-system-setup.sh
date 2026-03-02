@@ -526,22 +526,22 @@ else
                 log "noreply set_password note: $PW_RESULT"
             fi
             # Add noreply to Stalwart Mail Users so the mailbox is visible via LDAP
-            STALWART_GROUP_UUID=$(curl -ks -s -H "Authorization: Bearer $AUTHENTIK_BOOTSTRAP_TOKEN" \
+            STALWART_GROUP_PK=$(curl -ks -s -H "Authorization: Bearer $AUTHENTIK_BOOTSTRAP_TOKEN" \
                 "$AUTH_URL/api/v3/core/groups/?search=Stalwart%20Mail%20Users&page_size=10" | \
                 python3 -c "
 import sys, json
 d = json.load(sys.stdin)
 for g in d.get('results', []):
     if g.get('name') == 'Stalwart Mail Users':
-        print(g.get('uuid', ''))
+        print(g.get('pk', ''))
         break
 " 2>/dev/null)
-            if [ -n "$STALWART_GROUP_UUID" ]; then
+            if [ -n "$STALWART_GROUP_PK" ]; then
                 curl -ks -X POST \
                     -H "Authorization: Bearer $AUTHENTIK_BOOTSTRAP_TOKEN" \
                     -H "Content-Type: application/json" \
                     -d "{\"pk\": $NOREPLY_PK}" \
-                    "$AUTH_URL/api/v3/core/groups/$STALWART_GROUP_UUID/add_user/" >/dev/null 2>&1 && \
+                    "$AUTH_URL/api/v3/core/groups/$STALWART_GROUP_PK/add_user/" >/dev/null 2>&1 && \
                     success "noreply added to Stalwart Mail Users (mailbox visible via LDAP)." || true
             fi
         else
@@ -556,22 +556,22 @@ for g in d.get('results', []):
             "$AUTH_URL/api/v3/core/users/?username=noreply&page_size=1" | \
             python3 -c "import sys,json; d=json.load(sys.stdin); r=d.get('results',[]); print(r[0].get('pk','') if r else '')" 2>/dev/null)
         if [ -n "$NOREPLY_PK" ]; then
-            STALWART_GROUP_UUID=$(curl -ks -s -H "Authorization: Bearer $AUTHENTIK_BOOTSTRAP_TOKEN" \
+            STALWART_GROUP_PK=$(curl -ks -s -H "Authorization: Bearer $AUTHENTIK_BOOTSTRAP_TOKEN" \
                 "$AUTH_URL/api/v3/core/groups/?search=Stalwart%20Mail%20Users&page_size=10" | \
                 python3 -c "
 import sys, json
 d = json.load(sys.stdin)
 for g in d.get('results', []):
     if g.get('name') == 'Stalwart Mail Users':
-        print(g.get('uuid', ''))
+        print(g.get('pk', ''))
         break
 " 2>/dev/null)
-            if [ -n "$STALWART_GROUP_UUID" ]; then
+            if [ -n "$STALWART_GROUP_PK" ]; then
                 curl -ks -X POST \
                     -H "Authorization: Bearer $AUTHENTIK_BOOTSTRAP_TOKEN" \
                     -H "Content-Type: application/json" \
                     -d "{\"pk\": $NOREPLY_PK}" \
-                    "$AUTH_URL/api/v3/core/groups/$STALWART_GROUP_UUID/add_user/" >/dev/null 2>&1 && \
+                    "$AUTH_URL/api/v3/core/groups/$STALWART_GROUP_PK/add_user/" >/dev/null 2>&1 && \
                     success "noreply added to Stalwart Mail Users." || true
             fi
         fi

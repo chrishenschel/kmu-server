@@ -64,7 +64,7 @@ secret = "__BIND_PASSWORD__"
 method = "lookup"
 
 [directory.authentik.filter]
-name = "(|(cn=?)(mail=?))"
+name = "(cn=?)"
 email = "(mail=?)"
 
 [directory.authentik.attributes]
