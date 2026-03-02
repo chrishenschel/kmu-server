@@ -22,8 +22,8 @@ url = "https://mail.__DOMAIN__"
 use-proxy-headers = true
 
 [certificate.default]
-cert = "/opt/stalwart/caddy-data/caddy/certificates/acme-v02.api.letsencrypt.org-directory/mail.__DOMAIN__/mail.__DOMAIN__.crt"
-private-key = "/opt/stalwart/caddy-data/caddy/certificates/acme-v02.api.letsencrypt.org-directory/mail.__DOMAIN__/mail.__DOMAIN__.key"
+cert = "/opt/stalwart/caddy-data/certificates/acme-v02.api.letsencrypt.org-directory/mail.__DOMAIN__/mail.__DOMAIN__.crt"
+private-key = "/opt/stalwart/caddy-data/certificates/acme-v02.api.letsencrypt.org-directory/mail.__DOMAIN__/mail.__DOMAIN__.key"
 
 [storage]
 data = "postgres"
