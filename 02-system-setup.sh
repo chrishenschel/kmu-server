@@ -654,12 +654,12 @@ success "Nextcloud outgoing mail set to noreply@${domain}."
 
 IMMICH_URL="https://immich.${domain}"
 log "Waiting for Immich to be ready and creating bootstrap admin (so login shows OAuth instead of registration)..."
-IMMICH_BOOTSTRAP_EMAIL="immich-bootstrap@${domain}"
+IMMICH_BOOTSTRAP_EMAIL="noreply@${domain}"
 IMMICH_BOOTSTRAP_NAME="Immich Bootstrap"
 IMMICH_BOOTSTRAP_PASSWORD="$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9' | head -c 32)"
 for attempt in 1 2 3 4 5 6 7 8 9 10; do
     HTTP_CODE=$(curl -sk -o /tmp/immich_signup.json -w "%{http_code}" -X POST \
-        "$IMMICH_URL/api/auth/sign-up" \
+        "$IMMICH_URL/api/auth/admin-sign-up" \
         -H "Content-Type: application/json" \
         -d "{\"email\":\"$IMMICH_BOOTSTRAP_EMAIL\",\"name\":\"$IMMICH_BOOTSTRAP_NAME\",\"password\":\"$IMMICH_BOOTSTRAP_PASSWORD\"}" 2>/dev/null || echo "000")
     if [ "$HTTP_CODE" = "201" ]; then
