@@ -640,7 +640,7 @@ success "Nextcloud OIDC configuration complete."
 
 log "Setting up Nextcloud apps..."
 docker exec --user www-data nextcloud php occ app:disable twofactor_totp
-docker exec --user www-data nextcloud php occ app:enable files_accesscontrol files_retention calendar richdocumentscode contacts mail richdocuments deck groupfolders whiteboard collectives tables jitsi
+docker exec --user www-data nextcloud php occ app:enable files_accesscontrol files_retention calendar richdocumentscode contacts mail richdocuments deck groupfolders whiteboard collectives tables jitsi drawio
 log "Configuring Nextcloud Jitsi integration..."
 docker exec --user www-data nextcloud php occ config:app:set --value="https://meet.${domain}/" jitsi jitsi_server_url
 success "Nextcloud apps setup complete (including Jitsi integration)."
