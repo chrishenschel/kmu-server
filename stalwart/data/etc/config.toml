@@ -8,6 +8,7 @@ protocol = "smtp"
 [server.listener.submission]
 bind = "[::]:587"
 protocol = "smtp"
+tls.starttls = true
 
 [server.listener.smtps]
 bind = "[::]:465"
@@ -90,7 +91,7 @@ enable = true
 
 [tracer.stdout]
 type = "stdout"
-level = "info"
+level = "debug"
 ansi = true
 enable = true
 
