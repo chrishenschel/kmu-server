@@ -264,6 +264,10 @@ sed -i \
 sed -i \
     -e "s|__DOMAIN__|$domain|g" \
     "./authentik/blueprints/convertx.yaml"
+
+sed -i \
+    -e "s|__DOMAIN__|$domain|g" \
+    "./authentik/blueprints/it-tools.yaml"
   # Ensure PAPERLESS_SECRET_KEY exists (for existing installs that had .env before Paperless was added)
 if [ -f .env ] && ! grep -q '^PAPERLESS_SECRET_KEY=' .env 2>/dev/null; then
   echo "PAPERLESS_SECRET_KEY=$(openssl rand -base64 48 | tr -d '\n')" >> .env

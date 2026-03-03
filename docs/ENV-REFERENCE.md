@@ -79,6 +79,10 @@ No env vars required. Access is protected by Caddy + Authentik forward_auth only
 
 No env vars required. Access is protected by Caddy + Authentik forward_auth; `ALLOW_UNAUTHENTICATED=true` and `ACCOUNT_REGISTRATION=false` are set in compose. Optional: set `JWT_SECRET` in the ConvertX service if you enable accounts later.
 
+### IT-Tools
+
+No env vars required. Access is protected by Caddy + Authentik forward_auth.
+
 ### Optional overrides
 
 | Variable | Default | Description |

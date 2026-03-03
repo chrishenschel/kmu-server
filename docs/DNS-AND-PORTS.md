@@ -25,6 +25,7 @@ Point these hostnames at your server’s public IP:
 | `paperless.example.com` | Paperless-ngx (document management) |
 | `stirling.example.com` | Stirling-PDF (PDF tools) |
 | `convertx.example.com` | ConvertX (file converter) |
+| `it-tools.example.com` | IT-Tools (developer tools) |
 
 ## Ports
 

@@ -1,0 +1,35 @@
+version: 1
+metadata:
+  name: __DOMAIN__ IT-Tools
+  labels:
+    type: custom
+entries:
+  - model: authentik_providers_proxy.proxyprovider
+    id: it-tools-provider
+    identifiers:
+      name: IT-Tools Proxy
+    attrs:
+      mode: forward_single
+      external_host: https://it-tools.__DOMAIN__
+      authorization_flow: !Find [authentik_flows.flow, [slug, "default-provider-authorization-implicit-consent"]]
+      invalidation_flow: !Find [authentik_flows.flow, [slug, "default-provider-invalidation-flow"]]
+    state: present
+
+  - model: authentik_core.application
+    id: it-tools-app
+    identifiers:
+      slug: it-tools
+    attrs:
+      name: IT-Tools
+      slug: it-tools
+      provider: !KeyOf it-tools-provider
+      policy_engine_mode: any
+    state: present
+
+  - model: authentik_policies.policybinding
+    identifiers:
+      target: !KeyOf it-tools-app
+      order: 0
+    attrs:
+      group: !Find [authentik_core.group, [name, "authentik Admins"]]
+    state: present

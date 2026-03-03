@@ -21,4 +21,5 @@ entries:
         - !Find [authentik_providers_proxy.proxyprovider, [name, "Paperless Proxy"]]
         - !Find [authentik_providers_proxy.proxyprovider, [name, "Stirling-PDF Proxy"]]
         - !Find [authentik_providers_proxy.proxyprovider, [name, "ConvertX Proxy"]]
+        - !Find [authentik_providers_proxy.proxyprovider, [name, "IT-Tools Proxy"]]
     state: present
