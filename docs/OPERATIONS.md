@@ -25,6 +25,7 @@ docker compose logs -f
 docker compose logs -f caddy
 docker compose logs -f nextcloud
 docker compose logs -f immich-server
+docker compose logs -f paperless
 docker compose logs -f vaultwarden
 
 # Last 200 lines
@@ -54,6 +55,7 @@ Unhealthy containers: check logs, then restart. Common causes: dependency not re
 | Admin panel | https://admin.example.com | User management (Authentik, Stalwart, Nextcloud); protected by Authentik. |
 | Vaultwarden | https://vaultwarden.example.com | Passwords; use “Single sign-on” to log in with Authentik. |
 | Immich | https://immich.example.com | Photos/videos; “Login with OAuth” for Authentik. |
+| Paperless | https://paperless.example.com | Document management; protected by Authentik; create admin on first visit. |
 
 ## Adding a user
 
@@ -69,6 +71,7 @@ Unhealthy containers: check logs, then restart. Common causes: dependency not re
 - **Element**: Open https://element.example.com; if SSO is configured you are redirected to Authentik, then into Element.
 - **Vaultwarden**: Open https://vaultwarden.example.com → “Use single sign-on”.
 - **Immich**: Open https://immich.example.com → “Login with OAuth”. First OAuth user often becomes admin.
+- **Paperless**: Open https://paperless.example.com (Authentik login). On first visit create a Paperless admin user to manage documents.
 
 ## Common tasks
 

@@ -22,6 +22,7 @@ Point these hostnames at your server’s public IP:
 | `turn.example.com` | TURN server (Jitsi/coturn) |
 | `vaultwarden.example.com` | Vaultwarden (passwords) |
 | `immich.example.com` | Immich (photos/videos) |
+| `paperless.example.com` | Paperless-ngx (document management) |
 
 ## Ports
 

@@ -194,3 +194,19 @@ immich.__DOMAIN__ {
     # No forward_auth: Immich handles OAuth login at /auth/login and /user-settings
     reverse_proxy immich-server:2283
 }
+
+paperless.__DOMAIN__ {
+    log {
+        output file /var/log/caddy/access.log
+    }
+    handle /outpost.goauthentik.io/* {
+        reverse_proxy authentik-server:9000
+    }
+    handle {
+        forward_auth authentik-server:9000 {
+            uri /outpost.goauthentik.io/auth/caddy
+            copy_headers X-Authentik-Username X-Authentik-Groups X-Authentik-Email X-Authentik-Name X-Authentik-Uid X-Authentik-Jwt X-Authentik-Meta-Jwks X-Authentik-Meta-Outpost X-Authentik-Meta-Provider X-Authentik-Meta-App X-Authentik-Meta-Version
+        }
+        reverse_proxy paperless:8000
+    }
+}

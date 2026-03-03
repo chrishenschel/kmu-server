@@ -87,6 +87,8 @@ declare -a PATHS=(
   "vaultwarden/data"
   "immich/library"
   "immich/immich.json"
+  "paperless/data"
+  "paperless/media"
   "caddy/data"
   "caddy/config"
   "caddy/logs"

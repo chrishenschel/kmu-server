@@ -40,6 +40,9 @@ AUTHENTIK_BOOTSTRAP_PASSWORD="$(openssl rand -base64 60 | tr -d '\n')"
 AUTHENTIK_BOOTSTRAP_TOKEN="$(openssl rand -base64 60 | tr -d '\n')"
 AUTHENTIK_BOOTSTRAP_EMAIL="hostmaster@$domain"
 AUTHENTIK_SECRET_KEY=$(openssl rand -base64 60 | tr -d '\n')
+PAPERLESS_SECRET_KEY=$(openssl rand -base64 48 | tr -d '\n')
+PAPERLESS_CLIENT_ID=$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9' | head -c 40)
+PAPERLESS_CLIENT_SECRET=$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9' | head -c 60)
 
 
 # Generate environment variables
@@ -48,6 +51,9 @@ echo "AUTHENTIK_SECRET_KEY=$AUTHENTIK_SECRET_KEY" >> .env
 echo "AUTHENTIK_BOOTSTRAP_PASSWORD=$AUTHENTIK_BOOTSTRAP_PASSWORD" >> .env
 echo "AUTHENTIK_BOOTSTRAP_TOKEN=$AUTHENTIK_BOOTSTRAP_TOKEN" >> .env
 echo "AUTHENTIK_BOOTSTRAP_EMAIL=$AUTHENTIK_BOOTSTRAP_EMAIL" >> .env
+echo "PAPERLESS_SECRET_KEY=$PAPERLESS_SECRET_KEY" >> .env
+echo "PAPERLESS_CLIENT_ID=$PAPERLESS_CLIENT_ID" >> .env
+echo "PAPERLESS_CLIENT_SECRET=$PAPERLESS_CLIENT_SECRET" >> .env
 echo "DOMAIN=$domain" >> .env
 echo "USERNAME=$username" >> .env
 echo "USERFULLNAME=\"$userfullname\"" >> .env
@@ -244,6 +250,30 @@ sed -i \
     -e "s|__DOMAIN__|$domain|g" \
     "./authentik/blueprints/startpage.yaml"
 
+sed -i \
+    -e "s|__DOMAIN__|$domain|g" \
+    "./authentik/blueprints/paperless.yaml"
+  # Ensure PAPERLESS_SECRET_KEY exists (for existing installs that had .env before Paperless was added)
+if [ -f .env ] && ! grep -q '^PAPERLESS_SECRET_KEY=' .env 2>/dev/null; then
+  echo "PAPERLESS_SECRET_KEY=$(openssl rand -base64 48 | tr -d '\n')" >> .env
+fi
+# Paperless OIDC (Authentik) - ensure client id/secret exist for blueprint and for Paperless env
+if [ -f .env ] && ! grep -q '^PAPERLESS_CLIENT_ID=' .env 2>/dev/null; then
+  PAPERLESS_CLIENT_ID=$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9' | head -c 40)
+  PAPERLESS_CLIENT_SECRET=$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9' | head -c 60)
+  echo "PAPERLESS_CLIENT_ID=$PAPERLESS_CLIENT_ID" >> .env
+  echo "PAPERLESS_CLIENT_SECRET=$PAPERLESS_CLIENT_SECRET" >> .env
+fi
+# Substitute OIDC client id/secret into Paperless blueprint (must run after .env has them)
+set -a
+# shellcheck source=/dev/null
+[ -f .env ] && . ./.env
+set +a
+sed -i \
+    -e "s|__PAPERLESS_CLIENT_ID__|${PAPERLESS_CLIENT_ID:-__PAPERLESS_CLIENT_ID__}|g" \
+    -e "s|__PAPERLESS_CLIENT_SECRET__|${PAPERLESS_CLIENT_SECRET:-__PAPERLESS_CLIENT_SECRET__}|g" \
+    "./authentik/blueprints/paperless.yaml"
+
 # NEXTCLOUD
 NC_CLIENT_ID=$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9' | head -c 40)
 NC_CLIENT_SECRET=$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9' | head -c 60)
@@ -298,6 +328,7 @@ mkdir -p vaultwarden/data
 success "Vaultwarden data directory ready."
 
 mkdir -p immich/library
+mkdir -p paperless/data paperless/media paperless/export paperless/consume
 success "Immich library directory ready."
 
 ### --- Jitsi Meet configuration ---

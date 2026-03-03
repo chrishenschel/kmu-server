@@ -6,12 +6,13 @@ This repository contains an opinionated, **all‑in‑one self‑hosted stack** 
 
 - **Caddy** (`caddy`) – reverse proxy, TLS, and entrypoint for all HTTPS services.
 - **Authentik** (`authentikserver`, `worker`, `authentik-ldap`) – identity provider, SSO, and LDAP directory.
-- **PostgreSQL** (`postgres`, `postgres-backup`) – shared database for Authentik, Matrix Synapse, Stalwart, Nextcloud, Immich.
+- **PostgreSQL** (`postgres`, `postgres-backup`) – shared database for Authentik, Matrix Synapse, Stalwart, Nextcloud, Immich, Paperless.
 - **Matrix Synapse** (`synapse`) – Matrix homeserver.
 - **Element Web** (`element`) – Matrix web client, protected by Authentik and auto‑SSO.
 - **Nextcloud** (`nextcloud`) – Files, calendar, contacts, collaboration.
 - **Vaultwarden** (`vaultwarden`) – Bitwarden-compatible password manager; SSO via Authentik.
 - **Immich** (`immich-server`, `redis`) – Photo/video backup; OAuth via Authentik.
+- **Paperless-ngx** (`paperless`) – Document management (scan, OCR, search); protected by Authentik forward auth.
 - **Jitsi Meet** (`web`, `prosody`, `jicofo`, `jvb`) – Self‑hosted video conferencing at `meet.<domain>`; internal auth for room creators, anonymous guests allowed.
 - **coturn** (`coturn`) – TURN server for Jitsi (NAT traversal); reachable at `turn.<domain>`.
 - **Stalwart Mail** (`stalwart`) – Mail server (SMTP/IMAP + web UI), backed by Authentik LDAP.
@@ -72,7 +73,7 @@ flowchart LR
 ### Prerequisites
 
 - Fresh **Ubuntu/Debian** VM with root (or sudo) access.
-- Public DNS records for all service hostnames (see [docs/DNS-AND-PORTS.md](docs/DNS-AND-PORTS.md)): at least `auth.<domain>`, `cloud.<domain>`, `matrix.<domain>`, `element.<domain>`, `mail.<domain>`, `logs.<domain>`, `admin.<domain>`, `meet.<domain>`, `turn.<domain>`, `vaultwarden.<domain>`, `immich.<domain>`, and optionally bare `www.<domain>`.
+- Public DNS records for all service hostnames (see [docs/DNS-AND-PORTS.md](docs/DNS-AND-PORTS.md)): at least `auth.<domain>`, `cloud.<domain>`, `matrix.<domain>`, `element.<domain>`, `mail.<domain>`, `logs.<domain>`, `admin.<domain>`, `meet.<domain>`, `turn.<domain>`, `vaultwarden.<domain>`, `immich.<domain>`, `paperless.<domain>`, and optionally bare `www.<domain>`.
 - Ports **80/443** and mail ports (**25/465/993**) reachable from the Internet; **UDP 10000** (Jitsi JVB) and **3478/5349** TCP+UDP (TURN) for video conferencing.
 
 ### 1. Host bootstrap (`01-server-installation.sh`)
@@ -153,6 +154,7 @@ The Caddy configuration lives in [`caddy/Caddyfile`](caddy/Caddyfile) and:
   - `admin.<domain>` → `admin-panel:8000`.
   - `vaultwarden.<domain>` → `vaultwarden:80` (SSO login on the app).
   - `immich.<domain>` → `immich-server:2283` (OAuth login on the app).
+  - `paperless.<domain>` → `paperless:8000` (forward auth; create admin on first visit).
 - Applies **Authentik forward_auth** to:
   - `logs.<domain>` (`Dozzle Proxy`),
   - `admin.<domain>` (`Admin Panel Proxy`),
@@ -277,6 +279,7 @@ Admin entrypoints (assuming `DOMAIN=ACME.com`):
 - Admin panel: `https://admin.ACME.com`
 - Vaultwarden: `https://vaultwarden.ACME.com` (use “Single sign-on”)
 - Immich: `https://immich.ACME.com` (use “Login with OAuth”)
+- Paperless: `https://paperless.ACME.com` (Authentik login; create admin on first visit)
 
 **First login:** Use the username and password you gave to `02-system-setup.sh`. Log in to Authentik first; then use “Log in with OAuth” or “Single sign-on” for Nextcloud, Vaultwarden, and Immich. Element and Meet use the same Authentik session when behind forward_auth. For Immich, the setup script creates a bootstrap admin so the first visit shows the login page (and OAuth) instead of the Admin Registration form; log in with any Authentik user.
 
@@ -300,7 +303,7 @@ Then point your browser at `http://localhost:8000` (note: in production this is 
 
 ### 12. Backup & restore
 
-For basic disaster recovery, you can take logical backups of Postgres plus the key data directories for Authentik, Synapse, Nextcloud, Stalwart, Vaultwarden, Immich, Caddy, Jitsi, and the existing Postgres backup volume. **Always keep at least one snapshot off the server** (another disk or machine); the repo does not store your data.
+For basic disaster recovery, take logical backups of Postgres plus the key data directories for Authentik, Synapse, Nextcloud, Stalwart, Vaultwarden, Immich, Paperless, Caddy, Jitsi, and the existing Postgres backup volume. **Always keep at least one snapshot off the server** (another disk or machine); the repo does not store your data.
 
 - **Create a snapshot** (from the repo root):
 
@@ -384,6 +387,7 @@ Generated or used by `02-system-setup.sh` and Compose. **Do not commit `.env`**;
 | Vaultwarden: "Use single sign-on" fails or email not verified | Authentik must expose `email_verified: true` for the email scope. | Ensure the Vaultwarden blueprint is applied (custom "Vaultwarden Email Scope" mapping). See [Authentik Vaultwarden integration](https://integrations.goauthentik.io/security/vaultwarden/). |
 | Immich: OAuth not offered or redirect error | Immich OAuth is configured via `immich/immich.json` (issuer URL, client id/secret). | Ensure setup has run so `immich/immich.json` has no `__DOMAIN__`/`__IMMICH_CLIENT_*__` placeholders; or set OAuth in Immich Admin → Settings → OAuth. |
 | Immich: shows "Admin Registration" instead of login / OAuth | Immich shows the first-time admin signup when there are no users. | Create the first user once via API so the login page (and OAuth) is shown. From the server: `curl -sk -X POST "https://immich.<your-domain>/api/auth/admin-sign-up" -H "Content-Type: application/json" -d '{"email":"immich-bootstrap@<your-domain>","name":"Immich Bootstrap","password":"CHANGE_ME_STRONG_PASSWORD"}'`. Use a strong password (you can ignore it afterwards; log in via Authentik). Then reload Immich; the next visit shows the login page and OAuth. |
+| Paperless: database does not exist / connection refused | Postgres was provisioned before Paperless was added to the stack. | Add `paperless` to `POSTGRES_MULTIPLE_DATABASES` in `docker-compose.yaml`, then create the DB: `docker exec postgres psql -U postgres -c "CREATE DATABASE paperless;"`. Ensure `.env` has `PAPERLESS_SECRET_KEY=...` (run `02-system-setup.sh` to append it if missing, or generate with `openssl rand -base64 48`). Restart: `docker compose up -d paperless`. In Authentik, add the Paperless Proxy provider and application (or re-apply blueprints) and add the provider to the Embedded Outpost. |
 
 Useful commands:
 

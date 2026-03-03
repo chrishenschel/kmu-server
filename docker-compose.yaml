@@ -33,7 +33,7 @@ services:
     environment:
       POSTGRES_PASSWORD: "${PG_PASS}"
       POSTGRES_USER: postgres
-      POSTGRES_MULTIPLE_DATABASES: authentik,matrix,stalwart,nextcloud,immich
+      POSTGRES_MULTIPLE_DATABASES: authentik,matrix,stalwart,nextcloud,immich,paperless
     healthcheck:
       test: [ "CMD-SHELL", "pg_isready -U postgres" ]
       interval: 5s
@@ -392,6 +392,49 @@ services:
       - database
     healthcheck:
       test: [ "CMD-SHELL", "wget -q -O- http://localhost:2283/api/server/ping 2>/dev/null || exit 1" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  ## Paperless-ngx (document management; protected by Authentik)
+  paperless:
+    image: ghcr.io/paperless-ngx/paperless-ngx:latest
+    container_name: paperless
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      PAPERLESS_REDIS: "redis://redis:6379"
+      PAPERLESS_DBHOST: postgres
+      PAPERLESS_DBPORT: "5432"
+      PAPERLESS_DBNAME: paperless
+      PAPERLESS_DBUSER: postgres
+      PAPERLESS_DBPASS: "${PG_PASS}"
+      PAPERLESS_URL: "https://paperless.${DOMAIN}"
+      PAPERLESS_SECRET_KEY: "${PAPERLESS_SECRET_KEY:?PAPERLESS_SECRET_KEY required}"
+      PAPERLESS_TIME_ZONE: "${TZ:-Europe/Berlin}"
+      # OIDC "Login with authentik" (https://integrations.goauthentik.io/documentation/paperless-ngx/)
+      PAPERLESS_APPS: allauth.socialaccount.providers.openid_connect
+      PAPERLESS_SOCIALACCOUNT_PROVIDERS: "{\"openid_connect\":{\"OAUTH_PKCE_ENABLED\":true,\"APPS\":[{\"provider_id\":\"authentik\",\"name\":\"authentik\",\"client_id\":\"${PAPERLESS_CLIENT_ID}\",\"secret\":\"${PAPERLESS_CLIENT_SECRET}\",\"settings\":{\"server_url\":\"https://auth.${DOMAIN}/application/o/paperless-oidc/.well-known/openid-configuration\",\"fetch_userinfo\":true}}],\"SCOPE\":[\"openid\",\"profile\",\"email\"]}}"
+      PAPERLESS_LOGOUT_REDIRECT_URL: "https://auth.${DOMAIN}/application/o/paperless-oidc/end-session/"
+      PAPERLESS_SOCIAL_AUTO_SIGNUP: "true"
+      PAPERLESS_SOCIALACCOUNT_ALLOW_SIGNUPS: "true"
+    volumes:
+      - ./paperless/data:/usr/src/paperless/data
+      - ./paperless/media:/usr/src/paperless/media
+      - ./paperless/export:/usr/src/paperless/export
+      - ./paperless/consume:/usr/src/paperless/consume
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - caddy-proxy
+      - database
+    healthcheck:
+      test: [ "CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8000/', timeout=5)\" || exit 1" ]
       interval: 30s
       timeout: 10s
       retries: 3

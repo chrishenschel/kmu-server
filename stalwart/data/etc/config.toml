@@ -112,7 +112,7 @@ enable = true
 
 [tracer.stdout]
 type = "stdout"
-level = "debug"
+level = "info"
 ansi = true
 enable = true
 
@@ -128,6 +128,10 @@ directory = "authentik"
 # Allow all MAIL FROM for now (server is not an open relay because RCPT uses the LDAP directory
 # and relay is off by default). This avoids \"MAIL FROM unauthorized\" blocking local users.
 is-allowed = "true"
+
+[session.auth]
+# Allow authenticated users to use any MAIL FROM; with LDAP the strict match can reject valid sends.
+must-match-sender = false
 
 [auth.spf.verify]
 # Do SPF checks only for server-to-server SMTP traffic on port 25.
