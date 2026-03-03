@@ -440,6 +440,30 @@ services:
       retries: 3
       start_period: 60s
 
+  ## Stirling-PDF (PDF tools; free tier – protected by Caddy + Authentik forward_auth only, no in-app SSO)
+  stirling-pdf:
+    image: stirlingtools/stirling-pdf:latest
+    container_name: stirling-pdf
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      MODE: BOTH
+      SECURITY_ENABLELOGIN: "false"
+      SYSTEM_BACKENDURL: "https://stirling.${DOMAIN}"
+      LANGS: "en_GB"
+    volumes:
+      - ./stirling-pdf/configs:/configs
+      - ./stirling-pdf/logs:/logs
+    networks:
+      - caddy-proxy
+    healthcheck:
+      test: [ "CMD-SHELL", "wget -q -O /dev/null http://localhost:8080/ || exit 1" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
   ## Static hosting
   homepage:
     container_name: homepage

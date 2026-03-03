@@ -47,6 +47,7 @@ Used in Authentik blueprints and applications. Setup generates random values and
 | `NC_CLIENT_ID`, `NC_CLIENT_SECRET` | Setup | Nextcloud OIDC provider. |
 | `VW_CLIENT_ID`, `VW_CLIENT_SECRET` | Setup | Vaultwarden SSO (Authentik). |
 | `IMMICH_CLIENT_ID`, `IMMICH_CLIENT_SECRET` | Setup | Immich OAuth (Authentik + `immich/immich.json`). |
+| `PAPERLESS_CLIENT_ID`, `PAPERLESS_CLIENT_SECRET` | Setup | Paperless-ngx OIDC "Login with authentik" (Authentik + blueprint). |
 
 ### Nextcloud mail
 
@@ -68,6 +69,11 @@ Used in Authentik blueprints and applications. Setup generates random values and
 | Variable | Set by | Description |
 |----------|--------|-------------|
 | `PAPERLESS_SECRET_KEY` | Setup | Secret key for Paperless (sessions, crypto). Required for Paperless container. |
+| `PAPERLESS_CLIENT_ID`, `PAPERLESS_CLIENT_SECRET` | Setup | OIDC client for "Login with authentik" (see ENV-REFERENCE OAuth table). |
+
+### Stirling-PDF (free tier)
+
+No env vars required. Access is protected by Caddy + Authentik forward_auth only; no in-app login or SSO.
 
 ### Optional overrides
 

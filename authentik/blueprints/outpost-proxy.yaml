@@ -19,4 +19,5 @@ entries:
         - !Find [authentik_providers_proxy.proxyprovider, [name, "Jitsi Meet Proxy"]]
         - !Find [authentik_providers_proxy.proxyprovider, [name, "Start Page Proxy"]]
         - !Find [authentik_providers_proxy.proxyprovider, [name, "Paperless Proxy"]]
+        - !Find [authentik_providers_proxy.proxyprovider, [name, "Stirling-PDF Proxy"]]
     state: present

@@ -43,6 +43,9 @@ AUTHENTIK_SECRET_KEY=$(openssl rand -base64 60 | tr -d '\n')
 PAPERLESS_SECRET_KEY=$(openssl rand -base64 48 | tr -d '\n')
 PAPERLESS_CLIENT_ID=$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9' | head -c 40)
 PAPERLESS_CLIENT_SECRET=$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9' | head -c 60)
+STIRLING_INITIAL_PASSWORD=$(openssl rand -base64 24 | tr -d '\n')
+STIRLING_CLIENT_ID=$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9' | head -c 40)
+STIRLING_CLIENT_SECRET=$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9' | head -c 60)
 
 
 # Generate environment variables
@@ -253,6 +256,10 @@ sed -i \
 sed -i \
     -e "s|__DOMAIN__|$domain|g" \
     "./authentik/blueprints/paperless.yaml"
+
+sed -i \
+    -e "s|__DOMAIN__|$domain|g" \
+    "./authentik/blueprints/stirling.yaml"
   # Ensure PAPERLESS_SECRET_KEY exists (for existing installs that had .env before Paperless was added)
 if [ -f .env ] && ! grep -q '^PAPERLESS_SECRET_KEY=' .env 2>/dev/null; then
   echo "PAPERLESS_SECRET_KEY=$(openssl rand -base64 48 | tr -d '\n')" >> .env
@@ -329,6 +336,7 @@ success "Vaultwarden data directory ready."
 
 mkdir -p immich/library
 mkdir -p paperless/data paperless/media paperless/export paperless/consume
+mkdir -p stirling-pdf/configs stirling-pdf/logs
 success "Immich library directory ready."
 
 ### --- Jitsi Meet configuration ---

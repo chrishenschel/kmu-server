@@ -89,6 +89,7 @@ declare -a PATHS=(
   "immich/immich.json"
   "paperless/data"
   "paperless/media"
+  "stirling-pdf/configs"
   "caddy/data"
   "caddy/config"
   "caddy/logs"

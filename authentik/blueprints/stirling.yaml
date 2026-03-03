@@ -1,0 +1,36 @@
+version: 1
+metadata:
+  name: __DOMAIN__ Stirling-PDF
+  labels:
+    type: custom
+entries:
+  # Proxy provider (for Caddy forward_auth / outpost)
+  - model: authentik_providers_proxy.proxyprovider
+    id: stirling-provider
+    identifiers:
+      name: Stirling-PDF Proxy
+    attrs:
+      mode: forward_single
+      external_host: https://stirling.__DOMAIN__
+      authorization_flow: !Find [authentik_flows.flow, [slug, "default-provider-authorization-implicit-consent"]]
+      invalidation_flow: !Find [authentik_flows.flow, [slug, "default-provider-invalidation-flow"]]
+    state: present
+
+  - model: authentik_core.application
+    id: stirling-app
+    identifiers:
+      slug: stirling
+    attrs:
+      name: Stirling-PDF
+      slug: stirling
+      provider: !KeyOf stirling-provider
+      policy_engine_mode: any
+    state: present
+
+  - model: authentik_policies.policybinding
+    identifiers:
+      target: !KeyOf stirling-app
+      order: 0
+    attrs:
+      group: !Find [authentik_core.group, [name, "authentik Admins"]]
+    state: present
