@@ -108,5 +108,14 @@ directory = "authentik"
 # This controls MAIL FROM authorization and fixes "MAIL FROM unauthorized" for local users.
 is-allowed = "!is_empty(authenticated_as)"
 
+[auth.spf.verify]
+# Do SPF checks only for server-to-server SMTP traffic on port 25.
+# Disable SPF for authenticated submission (smtps/submission) so local users can send
+# even if DNS SPF for the domain doesn't include this server yet.
+mail-from = [
+  { if = "listener = 'smtp'", then = "relaxed" },
+  { else = "disable" }
+]
+
 [session]
 auth-mechanisms = ["plain"]
