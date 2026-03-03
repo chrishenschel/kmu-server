@@ -1,6 +1,27 @@
 [server]
 hostname = "mail.__DOMAIN__"
 
+[config]
+local-keys = [
+  "store.*",
+  "directory.*",
+  "tracer.*",
+  "!server.blocked-ip.*",
+  "!server.allowed-ip.*",
+  "server.*",
+  "authentication.fallback-admin.*",
+  "cluster.*",
+  "config.local-keys.*",
+  "storage.data",
+  "storage.blob",
+  "storage.lookup",
+  "storage.fts",
+  "storage.directory",
+  "certificate.*",
+  "session.*",
+  "auth.*"
+]
+
 [server.listener.smtp]
 bind = "[::]:25"
 protocol = "smtp"
@@ -69,7 +90,7 @@ secret = "__BIND_PASSWORD__"
 method = "lookup"
 
 [directory.authentik.filter]
-name = "(cn=?)"
+name = "(|(cn=?)(mail=?))"
 email = "(mail=?)"
 
 [directory.authentik.attributes]
@@ -104,9 +125,9 @@ secret = "__BIND_PASSWORD__"
 directory = "authentik"
 
 [session.mail]
-# Allow sending only for authenticated sessions (Nextcloud, mail clients).
-# This controls MAIL FROM authorization and fixes "MAIL FROM unauthorized" for local users.
-is-allowed = "!is_empty(authenticated_as)"
+# Allow all MAIL FROM for now (server is not an open relay because RCPT uses the LDAP directory
+# and relay is off by default). This avoids \"MAIL FROM unauthorized\" blocking local users.
+is-allowed = "true"
 
 [auth.spf.verify]
 # Do SPF checks only for server-to-server SMTP traffic on port 25.
