@@ -469,6 +469,8 @@ services:
     image: ghcr.io/requarks/wiki:2
     container_name: wiki
     restart: unless-stopped
+    env_file:
+      - .env
     environment:
       DB_TYPE: postgres
       DB_HOST: postgres
@@ -476,6 +478,9 @@ services:
       DB_USER: postgres
       DB_PASS: "${PG_PASS}"
       DB_NAME: wiki
+      # Bootstrap root admin on first start (only used if no admin exists yet)
+      ADMIN_EMAIL: "${WIKI_ADMIN_EMAIL:-hostmaster@${DOMAIN}}"
+      ADMIN_PASS: "${PASSWORD}"
     volumes:
       - ./wiki/data:/wiki/data
     depends_on:

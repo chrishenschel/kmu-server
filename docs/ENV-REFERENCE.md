@@ -72,6 +72,17 @@ Used in Authentik blueprints and applications. Setup generates random values and
 | `PAPERLESS_SECRET_KEY` | Setup | Secret key for Paperless (sessions, crypto). Required for Paperless container. |
 | `PAPERLESS_CLIENT_ID`, `PAPERLESS_CLIENT_SECRET` | Setup | OIDC client for "Login with authentik" (see ENV-REFERENCE OAuth table). |
 
+Setup runs `createsuperuser` after the stack is up so the first admin exists (username `USERNAME`, email `WIKI_ADMIN_EMAIL`, password `PASSWORD`). Idempotent: safe to re-run; skips if superuser already exists.
+
+### Wiki.js
+
+| Variable | Set by | Description |
+|----------|--------|-------------|
+| `WIKI_ADMIN_EMAIL` | Setup | Email for Wiki.js root admin (bootstrap on first start). Default `hostmaster@domain`. |
+| `PASSWORD` | .env | Used as `ADMIN_PASS` for Wiki.js root admin on first start. |
+
+No separate Wiki admin creation step: Wiki.js reads `ADMIN_EMAIL` and `ADMIN_PASS` from the environment on first start and creates the root account if none exists.
+
 ### Stirling-PDF (free tier)
 
 No env vars required. Access is protected by Caddy + Authentik forward_auth only; no in-app login or SSO.

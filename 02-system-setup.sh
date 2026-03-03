@@ -58,6 +58,7 @@ echo "PAPERLESS_SECRET_KEY=$PAPERLESS_SECRET_KEY" >> .env
 echo "PAPERLESS_CLIENT_ID=$PAPERLESS_CLIENT_ID" >> .env
 echo "PAPERLESS_CLIENT_SECRET=$PAPERLESS_CLIENT_SECRET" >> .env
 echo "DOMAIN=$domain" >> .env
+echo "WIKI_ADMIN_EMAIL=hostmaster@$domain" >> .env
 echo "USERNAME=$username" >> .env
 echo "USERFULLNAME=\"$userfullname\"" >> .env
 echo "PASSWORD=$password" >> .env
@@ -279,6 +280,10 @@ if [ -f .env ] && ! grep -q '^PAPERLESS_CLIENT_ID=' .env 2>/dev/null; then
   echo "PAPERLESS_CLIENT_ID=$PAPERLESS_CLIENT_ID" >> .env
   echo "PAPERLESS_CLIENT_SECRET=$PAPERLESS_CLIENT_SECRET" >> .env
 fi
+# Wiki.js / Paperless admin email (used by Wiki bootstrap and Paperless createsuperuser)
+if [ -f .env ] && ! grep -q '^WIKI_ADMIN_EMAIL=' .env 2>/dev/null; then
+  echo "WIKI_ADMIN_EMAIL=hostmaster@$domain" >> .env
+fi
 # Substitute OIDC client id/secret into Paperless blueprint (must run after .env has them)
 set -a
 # shellcheck source=/dev/null
@@ -444,6 +449,31 @@ fi
 
 log "Bringing up full stack (including Jitsi)..."
 docker compose up -d --remove-orphans
+
+### --- POST-DEPLOY: Paperless superuser + Wiki.js admin (env), then LDAP/Stalwart ---
+
+# Paperless-ngx: create Django superuser if none exists (idempotent; uses same credentials as bootstrap admin)
+log "Waiting for Paperless to be ready, then ensuring superuser exists..."
+set -a
+# shellcheck source=/dev/null
+[ -f .env ] && . ./.env
+set +a
+for i in $(seq 1 30); do
+  if docker compose exec -T paperless python3 -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/', timeout=3)" 2>/dev/null; then
+    break
+  fi
+  sleep 2
+done
+if docker compose exec -T paperless python3 -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/', timeout=5)" 2>/dev/null; then
+  docker compose exec -T \
+    -e DJANGO_SUPERUSER_USERNAME="${USERNAME:-admin}" \
+    -e DJANGO_SUPERUSER_EMAIL="${WIKI_ADMIN_EMAIL:-hostmaster@${DOMAIN}}" \
+    -e DJANGO_SUPERUSER_PASSWORD="${PASSWORD}" \
+    paperless python3 manage.py createsuperuser --noinput 2>/dev/null || true
+  success "Paperless superuser ensured (or already existed)."
+else
+  log "Paperless not ready in time; run manually later: docker compose exec -e DJANGO_SUPERUSER_USERNAME=... -e DJANGO_SUPERUSER_EMAIL=... -e DJANGO_SUPERUSER_PASSWORD=... paperless python3 manage.py createsuperuser --noinput"
+fi
 
 ### --- POST-DEPLOY: LDAP Outpost Token + Stalwart Admin Promotion ---
 
