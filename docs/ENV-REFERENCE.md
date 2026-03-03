@@ -48,6 +48,7 @@ Used in Authentik blueprints and applications. Setup generates random values and
 | `VW_CLIENT_ID`, `VW_CLIENT_SECRET` | Setup | Vaultwarden SSO (Authentik). |
 | `IMMICH_CLIENT_ID`, `IMMICH_CLIENT_SECRET` | Setup | Immich OAuth (Authentik + `immich/immich.json`). |
 | `PAPERLESS_CLIENT_ID`, `PAPERLESS_CLIENT_SECRET` | Setup | Paperless-ngx OIDC "Login with authentik" (Authentik + blueprint). |
+| `WIKI_CLIENT_ID`, `WIKI_CLIENT_SECRET` | Setup | Wiki.js OAuth client (Wiki.js → Authentik, see Wiki.js integration docs). |
 
 ### Nextcloud mail
 

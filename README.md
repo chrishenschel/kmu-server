@@ -6,13 +6,14 @@ This repository contains an opinionated, **all‑in‑one self‑hosted stack** 
 
 - **Caddy** (`caddy`) – reverse proxy, TLS, and entrypoint for all HTTPS services.
 - **Authentik** (`authentikserver`, `worker`, `authentik-ldap`) – identity provider, SSO, and LDAP directory.
-- **PostgreSQL** (`postgres`, `postgres-backup`) – shared database for Authentik, Matrix Synapse, Stalwart, Nextcloud, Immich, Paperless.
+- **PostgreSQL** (`postgres`, `postgres-backup`) – shared database for Authentik, Matrix Synapse, Stalwart, Nextcloud, Immich, Paperless, Wiki.js.
 - **Matrix Synapse** (`synapse`) – Matrix homeserver.
 - **Element Web** (`element`) – Matrix web client, protected by Authentik and auto‑SSO.
 - **Nextcloud** (`nextcloud`) – Files, calendar, contacts, collaboration.
 - **Vaultwarden** (`vaultwarden`) – Bitwarden-compatible password manager; SSO via Authentik.
 - **Immich** (`immich-server`, `redis`) – Photo/video backup; OAuth via Authentik.
 - **Paperless-ngx** (`paperless`) – Document management (scan, OCR, search); protected by Authentik forward auth.
+- **Wiki.js** (`wiki`) – Internal wiki / documentation; protected by Authentik forward auth; Wiki.js uses OAuth with Authentik for SSO ([Wiki.js integration](https://integrations.goauthentik.io/documentation/wiki-js/)).
 - **Stirling-PDF** (`stirling-pdf`) – PDF tools (merge, split, convert, OCR); free tier; protected by Authentik forward auth only (no in-app SSO).
 - **ConvertX** (`convertx`) – Self-hosted file converter (1000+ formats); protected by Authentik forward auth; in-app auth disabled (`ALLOW_UNAUTHENTICATED=true`).
 - **IT-Tools** (`it-tools`) – Handy online tools for developers; protected by Authentik forward auth ([CorentinTh/it-tools](https://github.com/CorentinTh/it-tools)).
@@ -76,7 +77,7 @@ flowchart LR
 ### Prerequisites
 
 - Fresh **Ubuntu/Debian** VM with root (or sudo) access.
-- Public DNS records for all service hostnames (see [docs/DNS-AND-PORTS.md](docs/DNS-AND-PORTS.md)): at least `auth.<domain>`, `cloud.<domain>`, `matrix.<domain>`, `element.<domain>`, `mail.<domain>`, `logs.<domain>`, `admin.<domain>`, `meet.<domain>`, `turn.<domain>`, `vaultwarden.<domain>`, `immich.<domain>`, `paperless.<domain>`, `stirling.<domain>`, `convertx.<domain>`, `it-tools.<domain>`, and optionally bare `www.<domain>`.
+- Public DNS records for all service hostnames (see [docs/DNS-AND-PORTS.md](docs/DNS-AND-PORTS.md)): at least `auth.<domain>`, `cloud.<domain>`, `matrix.<domain>`, `element.<domain>`, `mail.<domain>`, `logs.<domain>`, `start.<domain>`, `admin.<domain>`, `meet.<domain>`, `turn.<domain>`, `vaultwarden.<domain>`, `immich.<domain>`, `paperless.<domain>`, `wiki.<domain>`, `stirling.<domain>`, `convertx.<domain>`, `it-tools.<domain>`, and optionally bare `www.<domain>`.
 - Ports **80/443** and mail ports (**25/465/993**) reachable from the Internet; **UDP 10000** (Jitsi JVB) and **3478/5349** TCP+UDP (TURN) for video conferencing.
 
 ### 1. Host bootstrap (`01-server-installation.sh`)
@@ -286,6 +287,7 @@ Admin entrypoints (assuming `DOMAIN=ACME.com`):
 - Vaultwarden: `https://vaultwarden.ACME.com` (use “Single sign-on”)
 - Immich: `https://immich.ACME.com` (use “Login with OAuth”)
 - Paperless: `https://paperless.ACME.com` (Authentik login; create admin on first visit)
+- Wiki: `https://wiki.ACME.com` (Authentik login at Caddy; Wiki.js login with Authentik OIDC)
 - Stirling-PDF: `https://stirling.ACME.com` (Authentik login at Caddy; app has no login on free tier)
 - ConvertX: `https://convertx.ACME.com` (Authentik login at Caddy; in-app auth disabled)
 - IT-Tools: `https://it-tools.ACME.com` (Authentik login at Caddy)
@@ -398,6 +400,7 @@ Generated or used by `02-system-setup.sh` and Compose. **Do not commit `.env`**;
 | Immich: shows "Admin Registration" instead of login / OAuth | Immich shows the first-time admin signup when there are no users. | Create the first user once via API so the login page (and OAuth) is shown. From the server: `curl -sk -X POST "https://immich.<your-domain>/api/auth/admin-sign-up" -H "Content-Type: application/json" -d '{"email":"immich-bootstrap@<your-domain>","name":"Immich Bootstrap","password":"CHANGE_ME_STRONG_PASSWORD"}'`. Use a strong password (you can ignore it afterwards; log in via Authentik). Then reload Immich; the next visit shows the login page and OAuth. |
 | Paperless: database does not exist / connection refused | Postgres was provisioned before Paperless was added to the stack. | Add `paperless` to `POSTGRES_MULTIPLE_DATABASES` in `docker-compose.yaml`, then create the DB: `docker exec postgres psql -U postgres -c "CREATE DATABASE paperless;"`. Ensure `.env` has `PAPERLESS_SECRET_KEY=...` (run `02-system-setup.sh` to append it if missing, or generate with `openssl rand -base64 48`). Restart: `docker compose up -d paperless`. In Authentik, add the Paperless Proxy provider and application (or re-apply blueprints) and add the provider to the Embedded Outpost. |
 | Stirling-PDF: 401 or not reachable | Authentik forward_auth or outpost not applied. | Ensure "Stirling-PDF Proxy" is in the Embedded Outpost in Authentik; re-apply `authentik/blueprints/stirling.yaml` if needed. Reload Caddy. |
+| Wiki: 401 or not reachable | Authentik forward_auth or outpost not applied. | Ensure "Wiki Proxy" is in the Embedded Outpost in Authentik; re-apply `authentik/blueprints/wiki.yaml` if needed. Reload Caddy. |
 | ConvertX: 401 or not reachable | Authentik forward_auth or outpost not applied. | Ensure "ConvertX Proxy" is in the Embedded Outpost in Authentik; re-apply `authentik/blueprints/convertx.yaml` if needed. Reload Caddy. |
 | IT-Tools: 401 or not reachable | Authentik forward_auth or outpost not applied. | Ensure "IT-Tools Proxy" is in the Embedded Outpost in Authentik; re-apply `authentik/blueprints/it-tools.yaml` if needed. Reload Caddy. |
 

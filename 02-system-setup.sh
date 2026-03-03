@@ -330,6 +330,17 @@ sed -i \
     -e "s|__DOMAIN__|$domain|g" \
     "./immich/immich.json"
 
+# Wiki.js (OAuth with Authentik; client for Wiki.js to talk to Authentik)
+WIKI_CLIENT_ID=$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9' | head -c 40)
+WIKI_CLIENT_SECRET=$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9' | head -c 60)
+echo "WIKI_CLIENT_ID=$WIKI_CLIENT_ID" >> .env
+echo "WIKI_CLIENT_SECRET=$WIKI_CLIENT_SECRET" >> .env
+sed -i \
+    -e "s|__WIKI_CLIENT_ID__|$WIKI_CLIENT_ID|g" \
+    -e "s|__WIKI_CLIENT_SECRET__|$WIKI_CLIENT_SECRET|g" \
+    -e "s|__DOMAIN__|$domain|g" \
+    "./authentik/blueprints/wiki.yaml"
+
 # CRITICAL: Strip CRLF (\r) line endings from all blueprints to ensure Authentik can parse them
 sed -i 's/\r$//' ./authentik/blueprints/*.yaml
 
@@ -346,6 +357,7 @@ mkdir -p immich/library
 mkdir -p paperless/data paperless/media paperless/export paperless/consume
 mkdir -p stirling-pdf/configs stirling-pdf/logs
 mkdir -p convertx/data
+mkdir -p wiki/data
 success "Immich library directory ready."
 
 ### --- Jitsi Meet configuration ---

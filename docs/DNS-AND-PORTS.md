@@ -23,6 +23,7 @@ Point these hostnames at your server’s public IP:
 | `vaultwarden.example.com` | Vaultwarden (passwords) |
 | `immich.example.com` | Immich (photos/videos) |
 | `paperless.example.com` | Paperless-ngx (document management) |
+| `wiki.example.com` | Wiki.js (internal wiki) |
 | `stirling.example.com` | Stirling-PDF (PDF tools) |
 | `convertx.example.com` | ConvertX (file converter) |
 | `it-tools.example.com` | IT-Tools (developer tools) |

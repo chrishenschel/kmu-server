@@ -33,7 +33,7 @@ services:
     environment:
       POSTGRES_PASSWORD: "${PG_PASS}"
       POSTGRES_USER: postgres
-      POSTGRES_MULTIPLE_DATABASES: authentik,matrix,stalwart,nextcloud,immich,paperless
+      POSTGRES_MULTIPLE_DATABASES: authentik,matrix,stalwart,nextcloud,immich,paperless,wiki
     healthcheck:
       test: [ "CMD-SHELL", "pg_isready -U postgres" ]
       interval: 5s
@@ -459,6 +459,33 @@ services:
       - caddy-proxy
     healthcheck:
       test: [ "CMD-SHELL", "wget -q -O /dev/null http://localhost:8080/ || exit 1" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  ## Wiki.js (internal knowledge base; OIDC SSO via Authentik + forward_auth, https://integrations.goauthentik.io/documentation/wiki-js/)
+  wiki:
+    image: ghcr.io/requarks/wiki:2
+    container_name: wiki
+    restart: unless-stopped
+    environment:
+      DB_TYPE: postgres
+      DB_HOST: postgres
+      DB_PORT: "5432"
+      DB_USER: postgres
+      DB_PASS: "${PG_PASS}"
+      DB_NAME: wiki
+    volumes:
+      - ./wiki/data:/wiki/data
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - caddy-proxy
+      - database
+    healthcheck:
+      test: [ "CMD-SHELL", "wget -q -O /dev/null http://localhost:3000/ || exit 1" ]
       interval: 30s
       timeout: 10s
       retries: 3
