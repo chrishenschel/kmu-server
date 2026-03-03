@@ -90,6 +90,7 @@ declare -a PATHS=(
   "paperless/data"
   "paperless/media"
   "stirling-pdf/configs"
+  "convertx/data"
   "caddy/data"
   "caddy/config"
   "caddy/logs"

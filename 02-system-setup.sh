@@ -260,6 +260,10 @@ sed -i \
 sed -i \
     -e "s|__DOMAIN__|$domain|g" \
     "./authentik/blueprints/stirling.yaml"
+
+sed -i \
+    -e "s|__DOMAIN__|$domain|g" \
+    "./authentik/blueprints/convertx.yaml"
   # Ensure PAPERLESS_SECRET_KEY exists (for existing installs that had .env before Paperless was added)
 if [ -f .env ] && ! grep -q '^PAPERLESS_SECRET_KEY=' .env 2>/dev/null; then
   echo "PAPERLESS_SECRET_KEY=$(openssl rand -base64 48 | tr -d '\n')" >> .env
@@ -337,6 +341,7 @@ success "Vaultwarden data directory ready."
 mkdir -p immich/library
 mkdir -p paperless/data paperless/media paperless/export paperless/consume
 mkdir -p stirling-pdf/configs stirling-pdf/logs
+mkdir -p convertx/data
 success "Immich library directory ready."
 
 ### --- Jitsi Meet configuration ---

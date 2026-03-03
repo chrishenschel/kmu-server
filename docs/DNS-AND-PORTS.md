@@ -24,6 +24,7 @@ Point these hostnames at your server’s public IP:
 | `immich.example.com` | Immich (photos/videos) |
 | `paperless.example.com` | Paperless-ngx (document management) |
 | `stirling.example.com` | Stirling-PDF (PDF tools) |
+| `convertx.example.com` | ConvertX (file converter) |
 
 ## Ports
 

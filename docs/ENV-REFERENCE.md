@@ -75,6 +75,10 @@ Used in Authentik blueprints and applications. Setup generates random values and
 
 No env vars required. Access is protected by Caddy + Authentik forward_auth only; no in-app login or SSO.
 
+### ConvertX
+
+No env vars required. Access is protected by Caddy + Authentik forward_auth; `ALLOW_UNAUTHENTICATED=true` and `ACCOUNT_REGISTRATION=false` are set in compose. Optional: set `JWT_SECRET` in the ConvertX service if you enable accounts later.
+
 ### Optional overrides
 
 | Variable | Default | Description |
