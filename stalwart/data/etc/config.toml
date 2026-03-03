@@ -103,5 +103,10 @@ secret = "__BIND_PASSWORD__"
 [session.rcpt]
 directory = "authentik"
 
+[session.mail]
+# Allow sending only for authenticated sessions (Nextcloud, mail clients).
+# This controls MAIL FROM authorization and fixes "MAIL FROM unauthorized" for local users.
+is-allowed = "!is_empty(authenticated_as)"
+
 [session]
 auth-mechanisms = ["plain"]
