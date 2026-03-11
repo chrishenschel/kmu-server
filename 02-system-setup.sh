@@ -876,12 +876,21 @@ while true; do
 done
 
 log "Ensuring local Synapse admin user ${MATRIX_ADMIN_USER} exists..."
-docker compose exec -T synapse register_new_matrix_user \
+ADMIN_CREATE_OUTPUT="$(docker compose exec -T synapse register_new_matrix_user \
   -c /data/homeserver.yaml \
   -u "${MATRIX_ADMIN_LOCALPART}" \
   -p "${MATRIX_ADMIN_PASSWORD}" \
   -a \
-  -k "${MATRIX_REG_SHARED_SECRET}" 2>/dev/null || true
+  -k "${MATRIX_REG_SHARED_SECRET}" 2>&1 || true)"
+
+if echo "$ADMIN_CREATE_OUTPUT" | grep -qi "User ID already taken"; then
+  log "Synapse admin user ${MATRIX_ADMIN_USER} already exists."
+elif echo "$ADMIN_CREATE_OUTPUT" | grep -qi "Success!"; then
+  success "Synapse admin user ${MATRIX_ADMIN_USER} created."
+else
+  log "Warning: could not verify creation of Synapse admin user ${MATRIX_ADMIN_USER}. Output:"
+  echo "$ADMIN_CREATE_OUTPUT"
+fi
 
 log "Logging in as Synapse admin to obtain access token..."
 MATRIX_ADMIN_ACCESS_TOKEN="$(docker compose exec -T synapse curl -sS -X POST \
