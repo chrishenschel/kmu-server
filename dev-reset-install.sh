@@ -1,7 +1,16 @@
 #!/bin/bash
 # Dev reset: tear down stack, remove generated data and .env, then pull latest and re-run setup.
 # Keeps caddy/ (certificates). Does not remove backups/ by default.
-docker compose down -v
+
+echo "[INFO] Stopping Docker stack (docker compose down -v)..."
+while true; do
+  if docker compose down -v; then
+    echo "[INFO] Docker stack stopped successfully."
+    break
+  fi
+  echo "[WARN] docker compose down failed; retrying in 5s..."
+  sleep 5
+done
 rm -f .env
 rm -rf ./synapse/
 rm -rf ./stalwart/
