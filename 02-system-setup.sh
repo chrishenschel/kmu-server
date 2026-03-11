@@ -830,11 +830,20 @@ rm -f /tmp/immich_signup.json
 
 log "Ensuring Diun Matrix bot user and room..."
 
+# Internal URL for bootstrap (bypasses DNS/TLS/Caddy)
+MATRIX_SERVER_INTERNAL="http://synapse:8008"
+# External URL for Diun notifications / clients
 MATRIX_SERVER="https://matrix.${domain}"
 MATRIX_ADMIN_LOCALPART="matrix-admin"
 MATRIX_ADMIN_USER="@${MATRIX_ADMIN_LOCALPART}:${domain}"
 MATRIX_ADMIN_PASSWORD="$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9' | head -c 32)"
 MATRIX_REG_SHARED_SECRET="$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9' | head -c 40)"
+
+echo "MATRIX_REG_SHARED_SECRET=$MATRIX_REG_SHARED_SECRET" >> .env
+echo "MATRIX_ADMIN_USER=$MATRIX_ADMIN_USER" >> .env
+echo "MATRIX_ADMIN_PASSWORD=$MATRIX_ADMIN_PASSWORD" >> .env
+echo "MATRIX_SERVER=$MATRIX_SERVER" >> .env
+echo "MATRIX_ADMIN_LOCALPART=$MATRIX_ADMIN_LOCALPART" >> .env
 
 # Ensure registration_shared_secret is set so we can create an admin user non-interactively
 if ! grep -q '^registration_shared_secret:' synapse/data/homeserver.yaml 2>/dev/null; then
@@ -853,14 +862,27 @@ docker compose exec -T synapse register_new_matrix_user \
   -k "${MATRIX_REG_SHARED_SECRET}" 2>/dev/null || true
 
 log "Logging in as Synapse admin to obtain access token..."
-MATRIX_ADMIN_ACCESS_TOKEN="$(curl -sS -X POST \
-  -H "Content-Type: application/json" \
-  "${MATRIX_SERVER}/_matrix/client/v3/login" \
-  -d '{
+
+ATTEMPT=0
+MATRIX_ADMIN_ACCESS_TOKEN=""
+while [ -z "${MATRIX_ADMIN_ACCESS_TOKEN}" ]; do
+  ATTEMPT=$((ATTEMPT + 1))
+  MATRIX_ADMIN_ACCESS_TOKEN="$(curl -sS -X POST \
+    -H "Content-Type: application/json" \
+    "${MATRIX_SERVER_INTERNAL}/_matrix/client/v3/login" \
+    -d '{
   "type": "m.login.password",
   "identifier": { "type": "m.id.user", "user": "'"${MATRIX_ADMIN_USER}"'" },
   "password": "'"${MATRIX_ADMIN_PASSWORD}"'"
 }' | python3 -c "import sys, json; print(json.load(sys.stdin).get('access_token',''))" 2>/dev/null || true)"
+
+  if [ -z "${MATRIX_ADMIN_ACCESS_TOKEN}" ]; then
+    log "  Attempt $ATTEMPT - could not obtain Synapse admin access token yet, waiting 5s..."
+    sleep 5
+  fi
+done
+
+success "Got Synapse admin access token."
 
 if [ -z "${MATRIX_ADMIN_ACCESS_TOKEN}" ]; then
   log "Could not obtain Synapse admin access token; skipping Diun Matrix bootstrap."
@@ -869,7 +891,7 @@ else
   BOT_USER="@${BOT_LOCALPART}:${domain}"
   BOT_PASSWORD="$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9' | head -c 32)"
   ADMIN_USER="@${username}:${domain}"
-  ROOM_ALIAS_LOCALPART="diun-updates"
+  ROOM_ALIAS_LOCALPART="bot-updates"
   ROOM_ALIAS="#${ROOM_ALIAS_LOCALPART}:${domain}"
 
   log "Creating/updating Matrix user ${BOT_USER} via Synapse admin API..."
@@ -887,7 +909,7 @@ else
   log "Logging in as Diun bot to obtain access token..."
   BOT_TOKEN="$(curl -sS -X POST \
       -H "Content-Type: application/json" \
-      "${MATRIX_SERVER}/_matrix/client/v3/login" \
+      "${MATRIX_SERVER_INTERNAL}/_matrix/client/v3/login" \
       -d '{
   "type": "m.login.password",
   "identifier": { "type": "m.id.user", "user": "'"${BOT_USER}"'" },
@@ -897,6 +919,7 @@ else
   if [ -z "${BOT_TOKEN}" ]; then
       log "Could not obtain Diun bot access token; skipping Matrix Diun bootstrap."
   else
+      echo "MATRIX_BOT_TOKEN=$BOT_TOKEN" >> .env
       log "Ensuring Matrix room ${ROOM_ALIAS} exists..."
       CREATE_RESP="$(curl -sS -X POST \
           -H "Authorization: Bearer ${BOT_TOKEN}" \
