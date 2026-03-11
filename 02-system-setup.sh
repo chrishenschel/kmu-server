@@ -830,9 +830,6 @@ rm -f /tmp/immich_signup.json
 
 log "Ensuring Diun Matrix bot user and room..."
 
-# Internal URL for bootstrap (bypasses DNS/TLS/Caddy)
-MATRIX_SERVER_INTERNAL="http://synapse:8008"
-# External URL for Diun notifications / clients
 MATRIX_SERVER="https://matrix.${domain}"
 MATRIX_ADMIN_LOCALPART="matrix-admin"
 MATRIX_ADMIN_USER="@${MATRIX_ADMIN_LOCALPART}:${domain}"
@@ -867,9 +864,9 @@ ATTEMPT=0
 MATRIX_ADMIN_ACCESS_TOKEN=""
 while [ -z "${MATRIX_ADMIN_ACCESS_TOKEN}" ]; do
   ATTEMPT=$((ATTEMPT + 1))
-  MATRIX_ADMIN_ACCESS_TOKEN="$(curl -sS -X POST \
-    -H "Content-Type: application/json" \
-    "${MATRIX_SERVER_INTERNAL}/_matrix/client/v3/login" \
+  MATRIX_ADMIN_ACCESS_TOKEN="$(docker compose exec -T synapse curl -sS -X POST \
+    -H 'Content-Type: application/json' \
+    'http://localhost:8008/_matrix/client/v3/login' \
     -d '{
   "type": "m.login.password",
   "identifier": { "type": "m.id.user", "user": "'"${MATRIX_ADMIN_USER}"'" },
@@ -907,9 +904,9 @@ else
 }' >/dev/null 2>&1 || log "Could not create/update Diun bot user; check Synapse config."
 
   log "Logging in as Diun bot to obtain access token..."
-  BOT_TOKEN="$(curl -sS -X POST \
-      -H "Content-Type: application/json" \
-      "${MATRIX_SERVER_INTERNAL}/_matrix/client/v3/login" \
+  BOT_TOKEN="$(docker compose exec -T synapse curl -sS -X POST \
+      -H 'Content-Type: application/json' \
+      'http://localhost:8008/_matrix/client/v3/login' \
       -d '{
   "type": "m.login.password",
   "identifier": { "type": "m.id.user", "user": "'"${BOT_USER}"'" },
@@ -921,10 +918,10 @@ else
   else
       echo "MATRIX_BOT_TOKEN=$BOT_TOKEN" >> .env
       log "Ensuring Matrix room ${ROOM_ALIAS} exists..."
-      CREATE_RESP="$(curl -sS -X POST \
+      CREATE_RESP="$(docker compose exec -T synapse curl -sS -X POST \
           -H "Authorization: Bearer ${BOT_TOKEN}" \
-          -H "Content-Type: application/json" \
-          "${MATRIX_SERVER}/_matrix/client/v3/createRoom" \
+          -H 'Content-Type: application/json' \
+          'http://localhost:8008/_matrix/client/v3/createRoom' \
           -d '{
   "preset": "private_chat",
   "name": "Diun Updates",
@@ -934,8 +931,8 @@ else
       ROOM_ID="$(echo "${CREATE_RESP}" | python3 -c "import sys, json; d=json.load(sys.stdin); print(d.get('room_id',''))" 2>/dev/null || true)"
 
       if [ -z "${ROOM_ID}" ]; then
-          ROOM_ID="$(curl -sS \
-              "${MATRIX_SERVER}/_matrix/client/v3/directory/room/${ROOM_ALIAS}" \
+          ROOM_ID="$(docker compose exec -T synapse curl -sS \
+              "http://localhost:8008/_matrix/client/v3/directory/room/${ROOM_ALIAS}" \
               | python3 -c "import sys, json; d=json.load(sys.stdin); print(d.get('room_id',''))" 2>/dev/null || true)"
       fi
 
