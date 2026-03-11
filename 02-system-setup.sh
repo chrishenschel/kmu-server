@@ -466,22 +466,25 @@ set -a
 # shellcheck source=/dev/null
 [ -f .env ] && . ./.env
 set +a
-for i in $(seq 1 30); do
+
+# Wait indefinitely until the Paperless HTTP endpoint is reachable
+ATTEMPT=0
+while true; do
+  ATTEMPT=$((ATTEMPT + 1))
   if docker compose exec -T paperless python3 -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/', timeout=3)" 2>/dev/null; then
+    success "Paperless is reachable after $ATTEMPT attempts."
     break
   fi
-  sleep 2
+  log "  Attempt $ATTEMPT - Paperless not ready yet, waiting 5s..."
+  sleep 5
 done
-if docker compose exec -T paperless python3 -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/', timeout=5)" 2>/dev/null; then
-  docker compose exec -T \
-    -e DJANGO_SUPERUSER_USERNAME="${USERNAME:-admin}" \
-    -e DJANGO_SUPERUSER_EMAIL="${WIKI_ADMIN_EMAIL:-hostmaster@${DOMAIN}}" \
-    -e DJANGO_SUPERUSER_PASSWORD="${PASSWORD}" \
-    paperless python3 manage.py createsuperuser --noinput 2>/dev/null || true
-  success "Paperless superuser ensured (or already existed)."
-else
-  log "Paperless not ready in time; run manually later: docker compose exec -e DJANGO_SUPERUSER_USERNAME=... -e DJANGO_SUPERUSER_EMAIL=... -e DJANGO_SUPERUSER_PASSWORD=... paperless python3 manage.py createsuperuser --noinput"
-fi
+
+docker compose exec -T \
+  -e DJANGO_SUPERUSER_USERNAME="${USERNAME:-admin}" \
+  -e DJANGO_SUPERUSER_EMAIL="${WIKI_ADMIN_EMAIL:-hostmaster@${DOMAIN}}" \
+  -e DJANGO_SUPERUSER_PASSWORD="${PASSWORD}" \
+  paperless python3 manage.py createsuperuser --noinput 2>/dev/null || true
+success "Paperless superuser ensured (or already existed)."
 
 ### --- POST-DEPLOY: LDAP Outpost Token + Stalwart Admin Promotion ---
 
