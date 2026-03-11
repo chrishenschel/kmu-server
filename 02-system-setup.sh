@@ -448,6 +448,14 @@ else
 fi
 
 log "Bringing up full stack (including Jitsi)..."
+# Export image/version variables from .env.versions so docker compose
+# can resolve image placeholders like ${CADDY_IMAGE}, ${IMMICH_SERVER_IMAGE}, etc.
+if [ -f .env.versions ]; then
+  set -a
+  # shellcheck source=/dev/null
+  . ./.env.versions
+  set +a
+fi
 docker compose up -d --remove-orphans
 
 ### --- POST-DEPLOY: Paperless superuser + Wiki.js admin (env), then LDAP/Stalwart ---
