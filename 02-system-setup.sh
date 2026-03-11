@@ -815,6 +815,91 @@ for attempt in 1 2 3 4 5 6 7 8 9 10; do
 done
 rm -f /tmp/immich_signup.json
 
+### --- Diun: Matrix bot user + room (optional, requires MATRIX_ADMIN_ACCESS_TOKEN) ---
+
+log "Ensuring Diun Matrix bot user and room (if MATRIX_ADMIN_ACCESS_TOKEN is set)..."
+
+if [ -z "${MATRIX_ADMIN_ACCESS_TOKEN:-}" ]; then
+    log "MATRIX_ADMIN_ACCESS_TOKEN not set; skipping Diun Matrix bootstrap. Set it and rerun this step if you want Matrix notifications."
+else
+    MATRIX_SERVER="https://matrix.${domain}"
+    BOT_LOCALPART="diun-bot"
+    BOT_USER="@${BOT_LOCALPART}:${domain}"
+    BOT_PASSWORD="$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9' | head -c 32)"
+    ADMIN_USER="@${username}:${domain}"
+    ROOM_ALIAS_LOCALPART="diun-updates"
+    ROOM_ALIAS="#${ROOM_ALIAS_LOCALPART}:${domain}"
+
+    log "Creating/updating Matrix user ${BOT_USER} via Synapse admin API..."
+    curl -sS -X PUT \
+        -H "Authorization: Bearer ${MATRIX_ADMIN_ACCESS_TOKEN}" \
+        -H "Content-Type: application/json" \
+        "${MATRIX_SERVER}/_synapse/admin/v2/users/${BOT_USER}" \
+        -d '{
+  "password": "'"${BOT_PASSWORD}"'",
+  "displayname": "Diun Bot",
+  "admin": false,
+  "deactivated": false
+}' >/dev/null 2>&1 || log "Could not create/update Diun bot user; check Synapse admin token and config."
+
+    log "Logging in as Diun bot to obtain access token..."
+    BOT_TOKEN="$(curl -sS -X POST \
+        -H "Content-Type: application/json" \
+        "${MATRIX_SERVER}/_matrix/client/v3/login" \
+        -d '{
+  "type": "m.login.password",
+  "identifier": { "type": "m.id.user", "user": "'"${BOT_USER}"'" },
+  "password": "'"${BOT_PASSWORD}"'"
+}' | python3 -c "import sys, json; print(json.load(sys.stdin).get('access_token',''))" 2>/dev/null || true)"
+
+    if [ -z "${BOT_TOKEN}" ]; then
+        log "Could not obtain Diun bot access token; skipping Matrix Diun bootstrap."
+    else
+        log "Ensuring Matrix room ${ROOM_ALIAS} exists..."
+        CREATE_RESP="$(curl -sS -X POST \
+            -H "Authorization: Bearer ${BOT_TOKEN}" \
+            -H "Content-Type: application/json" \
+            "${MATRIX_SERVER}/_matrix/client/v3/createRoom" \
+            -d '{
+  "preset": "private_chat",
+  "name": "Diun Updates",
+  "room_alias_name": "'"${ROOM_ALIAS_LOCALPART}"'"
+}' 2>/dev/null || true)"
+
+        ROOM_ID="$(echo "${CREATE_RESP}" | python3 -c "import sys, json; d=json.load(sys.stdin); print(d.get('room_id',''))" 2>/dev/null || true)"
+
+        if [ -z "${ROOM_ID}" ]; then
+            ROOM_ID="$(curl -sS \
+                "${MATRIX_SERVER}/_matrix/client/v3/directory/room/${ROOM_ALIAS}" \
+                | python3 -c "import sys, json; d=json.load(sys.stdin); print(d.get('room_id',''))" 2>/dev/null || true)"
+        fi
+
+        if [ -z "${ROOM_ID}" ]; then
+            log "Could not resolve room id for ${ROOM_ALIAS}; skipping Diun Matrix env export."
+        else
+            log "Inviting admin user ${ADMIN_USER} to ${ROOM_ID}..."
+            curl -sS -X POST \
+                -H "Authorization: Bearer ${BOT_TOKEN}" \
+                -H "Content-Type: application/json" \
+                "${MATRIX_SERVER}/_matrix/client/v3/rooms/${ROOM_ID}/invite" \
+                -d '{ "user_id": "'"${ADMIN_USER}"'" }' >/dev/null 2>&1 || true
+
+            # Ensure .env contains the Diun Matrix settings (overwrite any old values)
+            sed -i '/^DIUN_MATRIX_HOMESERVER_URL=/d' .env 2>/dev/null || true
+            sed -i '/^DIUN_MATRIX_USER=/d' .env 2>/dev/null || true
+            sed -i '/^DIUN_MATRIX_PASSWORD=/d' .env 2>/dev/null || true
+            sed -i '/^DIUN_MATRIX_ROOM_ID=/d' .env 2>/dev/null || true
+
+            echo "DIUN_MATRIX_HOMESERVER_URL=${MATRIX_SERVER}" >> .env
+            echo "DIUN_MATRIX_USER=${BOT_USER}" >> .env
+            echo "DIUN_MATRIX_PASSWORD=${BOT_PASSWORD}" >> .env
+            echo "DIUN_MATRIX_ROOM_ID=${ROOM_ID}" >> .env
+
+            success "Diun Matrix bot ${BOT_USER} and room ${ROOM_ALIAS} bootstrapped. Env values written to .env."
+        fi
+    fi
+fi
+
 ### --- DNS Records ---
 
 log "Fetching recommended DNS records from Stalwart..."

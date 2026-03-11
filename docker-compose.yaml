@@ -663,6 +663,26 @@ services:
     networks:
       - meet.jitsi
 
+  ## Diun (Docker Image Update Notifier)
+  diun:
+    image: ${DIUN_IMAGE}
+    container_name: diun
+    restart: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./diun/data:/data
+    environment:
+      - TZ=Europe/Berlin
+      - DIUN_PROVIDERS_DOCKER=true
+      - DIUN_PROVIDERS_DOCKER_WATCHBYDEFAULT=true
+      - DIUN_WATCH_SCHEDULE=0 */6 * * *
+      - DIUN_NOTIF_MATRIX_HOMESERVERURL=${DIUN_MATRIX_HOMESERVER_URL}
+      - DIUN_NOTIF_MATRIX_USER=${DIUN_MATRIX_USER}
+      - DIUN_NOTIF_MATRIX_PASSWORD=${DIUN_MATRIX_PASSWORD}
+      - DIUN_NOTIF_MATRIX_ROOMID=${DIUN_MATRIX_ROOM_ID}
+    networks:
+      - caddy-proxy
+
 volumes:
   database:
     driver: local
