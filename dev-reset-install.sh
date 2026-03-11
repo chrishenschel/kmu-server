@@ -2,6 +2,15 @@
 # Dev reset: tear down stack, remove generated data and .env, then pull latest and re-run setup.
 # Keeps caddy/ (certificates). Does not remove backups/ by default.
 
+# Ensure image/version variables from .env.versions are available so
+# docker compose can parse docker-compose.yaml without complaining.
+if [ -f .env.versions ]; then
+  set -a
+  # shellcheck source=/dev/null
+  . ./.env.versions
+  set +a
+fi
+
 echo "[INFO] Stopping Docker stack (docker compose down -v)..."
 while true; do
   if docker compose down -v; then
