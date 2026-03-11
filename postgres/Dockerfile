@@ -1,4 +1,5 @@
-FROM pgvector/pgvector:pg16
+ARG POSTGRES_BASE_IMAGE=pgvector/pgvector:pg16
+FROM ${POSTGRES_BASE_IMAGE}
 ADD init-multiple-databases.sh /docker-entrypoint-initdb.d/
 # Ensure en_US.UTF-8 locale for consistency
 ENV LANG=en_US.utf8

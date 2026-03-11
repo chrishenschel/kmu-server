@@ -1,6 +1,6 @@
 services:
   caddy:
-    image: caddy
+    image: ${CADDY_IMAGE}
     container_name: caddy-proxy
     restart: unless-stopped
     ports:
@@ -22,10 +22,11 @@ services:
   postgres:
     env_file:
       - .env
-    # image: postgres:alpine
     build:
       context: ./postgres
       dockerfile: Dockerfile
+      args:
+        POSTGRES_BASE_IMAGE: ${POSTGRES_BASE_IMAGE}
     container_name: postgres
     restart: unless-stopped
     # ports:
@@ -45,7 +46,7 @@ services:
     networks:
       - database
   postgres-backup:
-    image: prodrigestivill/postgres-backup-local
+    image: ${POSTGRES_BACKUP_IMAGE}
     container_name: postgres-backup
     restart: always
     volumes:
@@ -63,7 +64,7 @@ services:
       - BACKUP_KEEP_MONTHS=6
   dozzle:
     container_name: dozzle
-    image: amir20/dozzle:latest
+    image: ${DOZZLE_IMAGE}
     restart: unless-stopped
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
@@ -77,7 +78,7 @@ services:
       retries: 3
 
   authentikserver:
-    image: ghcr.io/goauthentik/server:2026.2.0
+    image: ${AUTHENTIK_SERVER_IMAGE}
     command: server
     container_name: authentik-server
     depends_on:
@@ -110,7 +111,7 @@ services:
       - caddy-proxy
       - database
   worker:
-    image: ghcr.io/goauthentik/server:2026.2.0
+    image: ${AUTHENTIK_WORKER_IMAGE}
     container_name: authentik-worker
     command: worker
     depends_on:
@@ -144,7 +145,7 @@ services:
 
   ## Synapse / Element / MATRIX
   synapse:
-    image: ghcr.io/element-hq/synapse:latest
+    image: ${SYNAPSE_IMAGE}
     container_name: synapse
     env_file:
       - .env
@@ -169,7 +170,7 @@ services:
 
   element:
     container_name: element
-    image: vectorim/element-web:latest
+    image: ${ELEMENT_IMAGE}
     restart: unless-stopped
     volumes:
       - ./element/config.json:/app/config.json
@@ -178,7 +179,7 @@ services:
 
   ## Authentik LDAP Outpost (for Stalwart user authentication)
   authentik-ldap:
-    image: ghcr.io/goauthentik/ldap:2025.12.4
+    image: ${AUTHENTIK_LDAP_IMAGE}
     container_name: authentik-ldap
     restart: unless-stopped
     environment:
@@ -192,7 +193,7 @@ services:
 
   ## Mailserver
   stalwart:
-    image: stalwartlabs/stalwart:latest
+    image: ${STALWART_IMAGE}
     container_name: stalwart-mail
     restart: unless-stopped
     volumes:
@@ -220,7 +221,7 @@ services:
 
   ## Nextcloud
   nextcloud:
-    image: nextcloud:latest
+    image: ${NEXTCLOUD_IMAGE}
     container_name: nextcloud
     restart: unless-stopped
     depends_on:
@@ -256,7 +257,7 @@ services:
 
   ## User sync (Authentik -> Stalwart)
   user-sync:
-    image: python:3-alpine
+    image: ${USER_SYNC_IMAGE}
     container_name: user-sync
     restart: unless-stopped
     command: python3 /app/user-sync.py
@@ -287,7 +288,7 @@ services:
 
   ## Admin panel (user management; protected by Authentik)
   admin-panel:
-    image: python:3.12-slim
+    image: ${ADMIN_PANEL_IMAGE}
     container_name: admin-panel
     restart: unless-stopped
     working_dir: /app
@@ -319,7 +320,7 @@ services:
 
   ## Vaultwarden (Bitwarden-compatible password manager, SSO via Authentik)
   vaultwarden:
-    image: vaultwarden/server:latest
+    image: ${VAULTWARDEN_IMAGE}
     container_name: vaultwarden
     restart: unless-stopped
     environment:
@@ -349,7 +350,7 @@ services:
 
   ## Redis (for Immich)
   redis:
-    image: redis:7-alpine
+    image: ${REDIS_IMAGE}
     container_name: redis
     restart: unless-stopped
     networks:
@@ -362,7 +363,7 @@ services:
 
   ## Immich (photo/video backup, OAuth via Authentik)
   immich-server:
-    image: ghcr.io/immich-app/immich-server:release
+    image: ${IMMICH_SERVER_IMAGE}
     container_name: immich-server
     restart: unless-stopped
     env_file:
@@ -399,7 +400,7 @@ services:
 
   ## Paperless-ngx (document management; protected by Authentik)
   paperless:
-    image: ghcr.io/paperless-ngx/paperless-ngx:latest
+    image: ${PAPERLESS_IMAGE}
     container_name: paperless
     restart: unless-stopped
     env_file:
@@ -442,7 +443,7 @@ services:
 
   ## Stirling-PDF (PDF tools; free tier – protected by Caddy + Authentik forward_auth only, no in-app SSO)
   stirling-pdf:
-    image: stirlingtools/stirling-pdf:latest
+    image: ${STIRLING_PDF_IMAGE}
     container_name: stirling-pdf
     restart: unless-stopped
     env_file:
@@ -466,7 +467,7 @@ services:
 
   ## Wiki.js (internal knowledge base; OIDC SSO via Authentik + forward_auth, https://integrations.goauthentik.io/documentation/wiki-js/)
   wiki:
-    image: ghcr.io/requarks/wiki:2
+    image: ${WIKI_IMAGE}
     container_name: wiki
     restart: unless-stopped
     env_file:
@@ -498,7 +499,7 @@ services:
 
   ## ConvertX (self-hosted file converter; 1000+ formats – protected by Caddy + Authentik forward_auth, https://github.com/C4illin/ConvertX)
   convertx:
-    image: ghcr.io/c4illin/convertx:latest
+    image: ${CONVERTX_IMAGE}
     container_name: convertx
     restart: unless-stopped
     environment:
@@ -517,7 +518,7 @@ services:
 
   ## IT-Tools (handy online tools for developers – protected by Caddy + Authentik forward_auth, https://github.com/CorentinTh/it-tools)
   it-tools:
-    image: ghcr.io/corentinth/it-tools:latest
+    image: ${IT_TOOLS_IMAGE}
     container_name: it-tools
     restart: unless-stopped
     networks:
@@ -532,7 +533,7 @@ services:
   ## Static hosting
   homepage:
     container_name: homepage
-    image: nginx:latest
+    image: ${HOMEPAGE_IMAGE}
     restart: unless-stopped
     networks:
       - caddy-proxy
@@ -551,7 +552,7 @@ services:
  ## Static hosting
   startpage:
     container_name: startpage
-    image: nginx:latest
+    image: ${STARTPAGE_IMAGE}
     restart: unless-stopped
     networks:
       - caddy-proxy
@@ -580,7 +581,7 @@ services:
       - caddy-proxy
 
   jitsiweb:
-    image: jitsi/web:${JITSI_IMAGE_VERSION:-stable}
+    image: ${JITSI_WEB_IMAGE}
     container_name: jitsi-web
     restart: ${RESTART_POLICY:-unless-stopped}
     env_file:
@@ -598,7 +599,7 @@ services:
       - jvb
 
   prosody:
-    image: jitsi/prosody:${JITSI_IMAGE_VERSION:-stable}
+    image: ${JITSI_PROSODY_IMAGE}
     container_name: jitsi-prosody
     restart: ${RESTART_POLICY:-unless-stopped}
     env_file:
@@ -617,7 +618,7 @@ services:
           - xmpp.meet.jitsi
 
   jicofo:
-    image: jitsi/jicofo:${JITSI_IMAGE_VERSION:-stable}
+    image: ${JITSI_JICOFO_IMAGE}
     container_name: jitsi-jicofo
     restart: ${RESTART_POLICY:-unless-stopped}
     env_file:
@@ -632,7 +633,7 @@ services:
       - meet.jitsi
 
   jvb:
-    image: jitsi/jvb:${JITSI_IMAGE_VERSION:-stable}
+    image: ${JITSI_JVB_IMAGE}
     container_name: jitsi-jvb
     restart: ${RESTART_POLICY:-unless-stopped}
     env_file:
@@ -649,7 +650,7 @@ services:
 
   ## TURN server (coturn) for Jitsi
   coturn:
-    image: coturn/coturn:latest
+    image: ${COTURN_IMAGE}
     container_name: coturn
     restart: unless-stopped
     volumes:
