@@ -25,7 +25,7 @@ echo "PAPERLESS_SECRET_KEY=$PAPERLESS_SECRET_KEY" >> .env
 echo "PAPERLESS_CLIENT_ID=$PAPERLESS_CLIENT_ID" >> .env
 echo "PAPERLESS_CLIENT_SECRET=$PAPERLESS_CLIENT_SECRET" >> .env
 echo "DOMAIN=$domain" >> .env
-echo "WIKI_ADMIN_EMAIL=hostmaster@$domain" >> .env
+echo "WIKI_ADMIN_EMAIL=$email" >> .env
 echo "USERNAME=$username" >> .env
 echo "USERFULLNAME=\"$userfullname\"" >> .env
 echo "PASSWORD=$password" >> .env
@@ -169,7 +169,7 @@ if [ -f .env ] && ! grep -q '^PAPERLESS_CLIENT_ID=' .env 2>/dev/null; then
 fi
 
 if [ -f .env ] && ! grep -q '^WIKI_ADMIN_EMAIL=' .env 2>/dev/null; then
-  echo "WIKI_ADMIN_EMAIL=hostmaster@$domain" >> .env
+  echo "WIKI_ADMIN_EMAIL=$email" >> .env
 fi
 
 set -a
@@ -248,6 +248,7 @@ mkdir -p paperless/data paperless/media paperless/export paperless/consume
 mkdir -p stirling-pdf/configs stirling-pdf/logs
 mkdir -p convertx/data
 mkdir -p wiki/data
+chown -R 1000:1000 wiki/data
 success "Immich library and other app directories ready."
 
 ### Jitsi & coturn bootstrap
