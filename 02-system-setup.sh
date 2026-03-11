@@ -858,28 +858,32 @@ docker compose exec -T synapse register_new_matrix_user \
   -a \
   -k "${MATRIX_REG_SHARED_SECRET}" 2>/dev/null || true
 
-log "Logging in as Synapse admin to obtain access token..."
-
+log "Waiting for Synapse client API to be ready before admin login..."
 ATTEMPT=0
-MATRIX_ADMIN_ACCESS_TOKEN=""
-while [ -z "${MATRIX_ADMIN_ACCESS_TOKEN}" ]; do
+while true; do
   ATTEMPT=$((ATTEMPT + 1))
-  MATRIX_ADMIN_ACCESS_TOKEN="$(docker compose exec -T synapse curl -sS -X POST \
-    -H 'Content-Type: application/json' \
-    'http://localhost:8008/_matrix/client/v3/login' \
-    -d '{
+  if docker compose exec -T synapse curl -sSf \
+    'http://localhost:8008/_matrix/client/versions' >/dev/null 2>&1; then
+    success "Synapse client API is reachable."
+    break
+  fi
+  log "  Attempt $ATTEMPT - Synapse client API not ready yet, waiting 10s..."
+  sleep 10
+done
+
+log "Logging in as Synapse admin to obtain access token..."
+MATRIX_ADMIN_ACCESS_TOKEN="$(docker compose exec -T synapse curl -sS -X POST \
+  -H 'Content-Type: application/json' \
+  'http://localhost:8008/_matrix/client/v3/login' \
+  -d '{
   "type": "m.login.password",
   "identifier": { "type": "m.id.user", "user": "'"${MATRIX_ADMIN_USER}"'" },
   "password": "'"${MATRIX_ADMIN_PASSWORD}"'"
 }' | python3 -c "import sys, json; print(json.load(sys.stdin).get('access_token',''))" 2>/dev/null || true)"
 
-  if [ -z "${MATRIX_ADMIN_ACCESS_TOKEN}" ]; then
-    log "  Attempt $ATTEMPT - could not obtain Synapse admin access token yet, waiting 5s..."
-    sleep 5
-  fi
-done
-
-success "Got Synapse admin access token."
+if [ -n "${MATRIX_ADMIN_ACCESS_TOKEN}" ]; then
+  success "Got Synapse admin access token."
+fi
 
 if [ -z "${MATRIX_ADMIN_ACCESS_TOKEN}" ]; then
   log "Could not obtain Synapse admin access token; skipping Diun Matrix bootstrap."
