@@ -218,8 +218,9 @@ wiki.__DOMAIN__ {
     handle /outpost.goauthentik.io/* {
         reverse_proxy authentik-server:9000
     }
-    # Allow backend API access (used by setup scripts) without Authentik forward_auth
-    handle_path /graphql* {
+    # Allow backend API access (used by setup scripts) without Authentik forward_auth.
+    # Use handle (not handle_path) so the /graphql prefix is preserved for Wiki.js.
+    handle /graphql* {
         reverse_proxy wiki:3000
     }
     handle {
