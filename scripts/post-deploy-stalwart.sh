@@ -133,16 +133,18 @@ else
             else
                 log "noreply set_password note: $PW_RESULT"
             fi
-            STALWART_GROUP_PK=$(curl -ks -s -H "Authorization: Bearer $AUTHENTIK_BOOTSTRAP_TOKEN" \
-                "$AUTH_URL/api/v3/core/groups/?search=Stalwart%20Mail%20Users&page_size=10" | \
-                python3 -c "
+            STALWART_GROUP_PK=$(
+                curl -ks -s -H "Authorization: Bearer $AUTHENTIK_BOOTSTRAP_TOKEN" \
+                    "$AUTH_URL/api/v3/core/groups/?search=Stalwart%20Mail%20Users&page_size=10" | \
+                python3 << 'PY'
 import sys, json
 d = json.load(sys.stdin)
 for g in d.get('results', []):
     if g.get('name') == 'Stalwart Mail Users':
         print(g.get('pk', ''))
         break
-" 2>/dev/null)
+PY
+            )
             if [ -n "$STALWART_GROUP_PK" ]; then
                 curl -ks -X POST \
                     -H "Authorization: Bearer $AUTHENTIK_BOOTSTRAP_TOKEN" \
@@ -172,16 +174,18 @@ for g in d.get('results', []):
                 grep -q '^NOREPLY_MAIL_PASSWORD=' .env 2>/dev/null || echo "NOREPLY_MAIL_PASSWORD=$NOREPLY_PASS" >> .env
                 success "noreply password synced; NOREPLY_MAIL_PASSWORD written to .env."
             fi
-            STALWART_GROUP_PK=$(curl -ks -s -H "Authorization: Bearer $AUTHENTIK_BOOTSTRAP_TOKEN" \
-                "$AUTH_URL/api/v3/core/groups/?search=Stalwart%20Mail Users&page_size=10" | \
-                python3 -c "
+            STALWART_GROUP_PK=$(
+                curl -ks -s -H "Authorization: Bearer $AUTHENTIK_BOOTSTRAP_TOKEN" \
+                    "$AUTH_URL/api/v3/core/groups/?search=Stalwart%20Mail%20Users&page_size=10" | \
+                python3 << 'PY'
 import sys, json
 d = json.load(sys.stdin)
 for g in d.get('results', []):
     if g.get('name') == 'Stalwart Mail Users':
         print(g.get('pk', ''))
         break
-" 2>/dev/null)
+PY
+            )
             if [ -n "$STALWART_GROUP_PK" ]; then
                 curl -ks -X POST \
                     -H "Authorization: Bearer $AUTHENTIK_BOOTSTRAP_TOKEN" \
