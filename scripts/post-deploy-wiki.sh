@@ -4,15 +4,16 @@
 # No manual API token needed: we use authentication.login then mail.updateConfig.
 # Assumes: log/success/error functions and variables: domain, username, password.
 
-WIKI_BASE_URL="https://wiki.${domain}"
-
-# Load environment for NOREPLY_*, WIKI_ADMIN_EMAIL, PASSWORD, DOMAIN
-if [ -f .env ]; then
+# Load .env from repo root (parent of scripts/) so we always see NOREPLY_* set by post-deploy-stalwart
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+if [ -f "$REPO_ROOT/.env" ]; then
   set -a
   # shellcheck source=/dev/null
-  . ./.env
+  . "$REPO_ROOT/.env"
   set +a
 fi
+
+WIKI_BASE_URL="https://wiki.${domain}"
 
 # Prefer explicit wiki admin email, fallback to setup email
 WIKI_ADMIN="${WIKI_ADMIN_EMAIL:-$email}"

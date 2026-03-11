@@ -155,13 +155,23 @@ for g in d.get('results', []):
             log "Could not get noreply user pk from response."
         fi
     elif echo "$CREATE_RESULT" | grep -qi "unique\|already exists"; then
-        log "noreply user already exists in Authentik; reusing NOREPLY_MAIL_PASSWORD from .env if set."
+        log "noreply user already exists in Authentik; reusing or resetting password and ensuring NOREPLY_MAIL_PASSWORD in .env."
         [ -f .env ] && set -a && source .env && set +a
         NOREPLY_PASS="${NOREPLY_MAIL_PASSWORD:-$NOREPLY_PASS}"
         NOREPLY_PK=$(curl -ks -s -H "Authorization: Bearer $AUTHENTIK_BOOTSTRAP_TOKEN" \
             "$AUTH_URL/api/v3/core/users/?username=noreply&page_size=1" | \
             python3 -c "import sys,json; d=json.load(sys.stdin); r=d.get('results',[]); print(r[0].get('pk','') if r else '')" 2>/dev/null)
         if [ -n "$NOREPLY_PK" ]; then
+            # Ensure we have a known password in .env: set password via API so downstream (Wiki, Nextcloud, etc.) can use it
+            PW_RESULT=$(curl -ks -X POST \
+                -H "Authorization: Bearer $AUTHENTIK_BOOTSTRAP_TOKEN" \
+                -H "Content-Type: application/json" \
+                -d "{\"password\": \"$NOREPLY_PASS\"}" \
+                "$AUTH_URL/api/v3/core/users/$NOREPLY_PK/set_password/" 2>&1)
+            if [ "${PW_RESULT}" = "" ] || echo "$PW_RESULT" | grep -q "204\|200"; then
+                grep -q '^NOREPLY_MAIL_PASSWORD=' .env 2>/dev/null || echo "NOREPLY_MAIL_PASSWORD=$NOREPLY_PASS" >> .env
+                success "noreply password synced; NOREPLY_MAIL_PASSWORD written to .env."
+            fi
             STALWART_GROUP_PK=$(curl -ks -s -H "Authorization: Bearer $AUTHENTIK_BOOTSTRAP_TOKEN" \
                 "$AUTH_URL/api/v3/core/groups/?search=Stalwart%20Mail Users&page_size=10" | \
                 python3 -c "
