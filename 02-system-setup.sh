@@ -880,8 +880,7 @@ ADMIN_CREATE_OUTPUT="$(docker compose exec -T synapse register_new_matrix_user \
   -c /data/homeserver.yaml \
   -u "${MATRIX_ADMIN_LOCALPART}" \
   -p "${MATRIX_ADMIN_PASSWORD}" \
-  -a \
-  -k "${MATRIX_REG_SHARED_SECRET}" 2>&1 || true)"
+  -a 2>&1 || true)"
 
 if echo "$ADMIN_CREATE_OUTPUT" | grep -qi "User ID already taken"; then
   log "Synapse admin user ${MATRIX_ADMIN_USER} already exists."
