@@ -830,11 +830,23 @@ rm -f /tmp/immich_signup.json
 
 log "Ensuring Diun Matrix bot user and room..."
 
-MATRIX_SERVER="https://matrix.${domain}"
-MATRIX_ADMIN_LOCALPART="matrix-admin"
-MATRIX_ADMIN_USER="@${MATRIX_ADMIN_LOCALPART}:${domain}"
-MATRIX_ADMIN_PASSWORD="$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9' | head -c 32)"
-MATRIX_REG_SHARED_SECRET="$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9' | head -c 40)"
+# Load existing values from .env if present so reruns are idempotent
+set -a
+[ -f .env ] && . ./.env
+set +a
+
+MATRIX_SERVER="${MATRIX_SERVER:-https://matrix.${domain}}"
+MATRIX_ADMIN_LOCALPART="${MATRIX_ADMIN_LOCALPART:-matrix-admin}"
+MATRIX_ADMIN_USER="${MATRIX_ADMIN_USER:-@${MATRIX_ADMIN_LOCALPART}:${domain}}"
+MATRIX_ADMIN_PASSWORD="${MATRIX_ADMIN_PASSWORD:-$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9' | head -c 32)}"
+MATRIX_REG_SHARED_SECRET="${MATRIX_REG_SHARED_SECRET:-$(head -c 500 /dev/urandom | tr -dc 'a-zA-Z0-9' | head -c 40)}"
+
+# Persist (or update) these values in .env
+sed -i '/^MATRIX_REG_SHARED_SECRET=/d' .env 2>/dev/null || true
+sed -i '/^MATRIX_ADMIN_USER=/d' .env 2>/dev/null || true
+sed -i '/^MATRIX_ADMIN_PASSWORD=/d' .env 2>/dev/null || true
+sed -i '/^MATRIX_SERVER=/d' .env 2>/dev/null || true
+sed -i '/^MATRIX_ADMIN_LOCALPART=/d' .env 2>/dev/null || true
 
 echo "MATRIX_REG_SHARED_SECRET=$MATRIX_REG_SHARED_SECRET" >> .env
 echo "MATRIX_ADMIN_USER=$MATRIX_ADMIN_USER" >> .env
