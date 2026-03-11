@@ -850,15 +850,7 @@ else
   MATRIX_REG_SHARED_SECRET="$(grep '^registration_shared_secret:' synapse/data/homeserver.yaml | sed 's/registration_shared_secret:[[:space:]]*\"\\{0,1\\}//' | tr -d '"' )"
 fi
 
-log "Ensuring local Synapse admin user ${MATRIX_ADMIN_USER} exists..."
-docker compose exec -T synapse register_new_matrix_user \
-  -c /data/homeserver.yaml \
-  -u "${MATRIX_ADMIN_LOCALPART}" \
-  -p "${MATRIX_ADMIN_PASSWORD}" \
-  -a \
-  -k "${MATRIX_REG_SHARED_SECRET}" 2>/dev/null || true
-
-log "Waiting for Synapse client API to be ready before admin login..."
+log "Waiting for Synapse client API to be ready before creating admin user/login..."
 ATTEMPT=0
 while true; do
   ATTEMPT=$((ATTEMPT + 1))
@@ -870,6 +862,14 @@ while true; do
   log "  Attempt $ATTEMPT - Synapse client API not ready yet, waiting 10s..."
   sleep 10
 done
+
+log "Ensuring local Synapse admin user ${MATRIX_ADMIN_USER} exists..."
+docker compose exec -T synapse register_new_matrix_user \
+  -c /data/homeserver.yaml \
+  -u "${MATRIX_ADMIN_LOCALPART}" \
+  -p "${MATRIX_ADMIN_PASSWORD}" \
+  -a \
+  -k "${MATRIX_REG_SHARED_SECRET}" 2>/dev/null || true
 
 log "Logging in as Synapse admin to obtain access token..."
 MATRIX_ADMIN_ACCESS_TOKEN="$(docker compose exec -T synapse curl -sS -X POST \
