@@ -218,6 +218,10 @@ wiki.__DOMAIN__ {
     handle /outpost.goauthentik.io/* {
         reverse_proxy authentik-server:9000
     }
+    # Allow backend API access (used by setup scripts) without Authentik forward_auth
+    handle_path /graphql* {
+        reverse_proxy wiki:3000
+    }
     handle {
         forward_auth authentik-server:9000 {
             uri /outpost.goauthentik.io/auth/caddy
