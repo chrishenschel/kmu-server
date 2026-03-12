@@ -36,4 +36,4 @@ rm -rf ./immich/
 rm -f dns-config.txt
 docker volume rm infra_synapse_data 2>/dev/null || true
 
-git stash && git pull && chmod a+x dev-reset-install.sh 02-system-setup.sh backup.sh restore.sh
+git stash && git pull && chmod a+x dev-reset-install.sh 02-system-setup.sh backup.sh restore.sh kmu

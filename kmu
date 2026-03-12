@@ -1,0 +1,91 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "${SCRIPT_DIR}"
+
+load_env_file() {
+  local file="$1"
+  if [[ -f "${file}" ]]; then
+    # shellcheck disable=SC1090
+    set -a
+    . "${file}"
+    set +a
+  fi
+}
+
+# Load versioned images and main env if present
+load_env_file ".env.versions"
+load_env_file ".env"
+
+DC="docker compose"
+
+usage() {
+  cat <<EOF
+Usage: kmu <command> [args...]
+
+Convenience wrapper for docker compose in this repo.
+
+Commands:
+  up [services...]         Start stack (default: all services)
+  down                     Stop stack and remove containers
+  restart [services...]    Restart one or more services
+  logs [-f] [services...]  Show logs (passes args to 'docker compose logs')
+  ps                       Show service status
+  exec <svc> [cmd...]      Run a command in a service container
+  help                     Show this help
+
+Examples:
+  kmu up
+  kmu logs -f
+  kmu logs -f wiki
+  kmu restart wiki
+  kmu exec wiki sh
+EOF
+}
+
+cmd="${1-}"
+shift || true
+
+case "${cmd}" in
+  up)
+    # kmu up [services...]
+    exec ${DC} up "$@"
+    ;;
+  down)
+    exec ${DC} down "$@"
+    ;;
+  restart)
+    exec ${DC} restart "$@"
+    ;;
+  logs)
+    # kmu logs [-f] [services...]
+    exec ${DC} logs "$@"
+    ;;
+  ps)
+    exec ${DC} ps "$@"
+    ;;
+  exec)
+    if [[ $# -lt 1 ]]; then
+      echo "kmu exec requires at least a service name" >&2
+      exit 1
+    fi
+    svc="$1"
+    shift
+    if [[ $# -eq 0 ]]; then
+      # Default to interactive shell
+      exec ${DC} exec -it "${svc}" sh
+    else
+      exec ${DC} exec "${svc}" "$@"
+    fi
+    ;;
+  help|"")
+    usage
+    ;;
+  *)
+    echo "Unknown command: ${cmd}" >&2
+    usage
+    exit 1
+    ;;
+esac
+
