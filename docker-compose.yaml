@@ -497,6 +497,30 @@ services:
       retries: 3
       start_period: 30s
 
+  ## Wiki.js first-run automation (bypass interactive admin wizard)
+  wiki-setup:
+    image: curlimages/curl:latest
+    container_name: wiki-setup
+    restart: "no"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      wiki:
+        condition: service_started
+    environment:
+      DOMAIN: "${DOMAIN}"
+      PASSWORD: "${PASSWORD}"
+      WIKI_ADMIN_EMAIL: "${WIKI_ADMIN_EMAIL:-hostmaster@${DOMAIN}}"
+      # Optional overrides:
+      # WIKI_ADMIN_PASSWORD: can override PASSWORD if desired
+      # WIKI_SITE_URL: can override https://wiki.${DOMAIN}
+    volumes:
+      - ./scripts/wiki-setup.sh:/scripts/wiki-setup.sh:ro
+    networks:
+      - caddy-proxy
+      - database
+    command: [ "sh", "/scripts/wiki-setup.sh" ]
+
   ## ConvertX (self-hosted file converter; 1000+ formats – protected by Caddy + Authentik forward_auth, https://github.com/C4illin/ConvertX)
   convertx:
     image: ${CONVERTX_IMAGE}
