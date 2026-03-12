@@ -59,6 +59,15 @@ entries:
       is_superuser_group: false
     state: present
 
+  - model: authentik_core.group
+    id: wiki-content-admins-group
+    identifiers:
+      name: wiki-content-admins
+    attrs:
+      name: wiki-content-admins
+      is_superuser_group: false
+    state: present
+
   # Scope mapping: inject per-app admin boolean flags into tokens
   - model: authentik_providers_oauth2.scopemapping
     id: app-admin-flags-scope
@@ -71,6 +80,7 @@ entries:
         return {
             "nextcloud_admin": "nextcloud-admins" in group_names,
             "wiki_admin": "wiki-admins" in group_names,
+            "wiki_content_admin": "wiki-content-admins" in group_names,
             "vaultwarden_admin": "vaultwarden-admins" in group_names,
             "immich_admin": "immich-admins" in group_names,
             "paperless_admin": "paperless-admins" in group_names,

@@ -122,7 +122,7 @@ secret = "__BIND_PASSWORD__"
 
 # Use LDAP directory to validate local recipients (required for accepting mail to local users)
 [session.rcpt]
-directory = "authentik"
+directory = "'authentik'"
 
 [session.mail]
 # Allow all MAIL FROM for now (server is not an open relay because RCPT uses the LDAP directory

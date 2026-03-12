@@ -53,6 +53,9 @@ docker compose up -d --remove-orphans
 
 ### --- Diun: Matrix bot user + room (fully automated) ---
 . ./scripts/post-deploy-matrix-diun.sh
+log "Restarting Diun..."
+docker compose down diun
+docker compose up -d diun
 
 ### --- DNS Records ---
 
