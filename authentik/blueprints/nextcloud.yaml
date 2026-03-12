@@ -15,11 +15,14 @@ entries:
         groups = [group.name for group in user.groups.all()]
         if user.is_superuser and "admin" not in groups:
             groups.append("admin")
+        # Mark Nextcloud admins via group membership
+        nextcloud_admin = "nextcloud-admins" in groups
         return {
             "name": request.user.name,
             "groups": groups,
             "quota": user.group_attributes().get("nextcloud_quota", None),
             "user_id": user.attributes.get("nextcloud_user_id", str(user.uuid)),
+            "nextcloud_admin": nextcloud_admin,
         }
     state: present
 

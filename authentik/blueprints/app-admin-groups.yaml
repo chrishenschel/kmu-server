@@ -1,0 +1,80 @@
+version: 1
+metadata:
+  name: __DOMAIN__ App Admin Groups and Claims
+  labels:
+    type: custom
+entries:
+  # Per-app admin groups
+  - model: authentik_core.group
+    id: nextcloud-admins-group
+    identifiers:
+      name: nextcloud-admins
+    attrs:
+      name: nextcloud-admins
+      is_superuser_group: false
+    state: present
+
+  - model: authentik_core.group
+    id: wiki-admins-group
+    identifiers:
+      name: wiki-admins
+    attrs:
+      name: wiki-admins
+      is_superuser_group: false
+    state: present
+
+  - model: authentik_core.group
+    id: vaultwarden-admins-group
+    identifiers:
+      name: vaultwarden-admins
+    attrs:
+      name: vaultwarden-admins
+      is_superuser_group: false
+    state: present
+
+  - model: authentik_core.group
+    id: immich-admins-group
+    identifiers:
+      name: immich-admins
+    attrs:
+      name: immich-admins
+      is_superuser_group: false
+    state: present
+
+  - model: authentik_core.group
+    id: paperless-admins-group
+    identifiers:
+      name: paperless-admins
+    attrs:
+      name: paperless-admins
+      is_superuser_group: false
+    state: present
+
+  - model: authentik_core.group
+    id: mail-admins-group
+    identifiers:
+      name: mail-admins
+    attrs:
+      name: mail-admins
+      is_superuser_group: false
+    state: present
+
+  # Scope mapping: inject per-app admin boolean flags into tokens
+  - model: authentik_providers_oauth2.scopemapping
+    id: app-admin-flags-scope
+    identifiers:
+      name: "App Admin Flags"
+    attrs:
+      scope_name: app_admin
+      expression: |
+        group_names = [g.name for g in user.groups.all()]
+        return {
+            "nextcloud_admin": "nextcloud-admins" in group_names,
+            "wiki_admin": "wiki-admins" in group_names,
+            "vaultwarden_admin": "vaultwarden-admins" in group_names,
+            "immich_admin": "immich-admins" in group_names,
+            "paperless_admin": "paperless-admins" in group_names,
+            "mail_admin": "mail-admins" in group_names,
+        }
+    state: present
+

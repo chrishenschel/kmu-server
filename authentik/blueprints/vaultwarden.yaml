@@ -39,6 +39,7 @@ entries:
         - !Find [authentik_providers_oauth2.scopemapping, [scope_name, "profile"]]
         - !KeyOf vaultwarden-email-scope
         - !Find [authentik_providers_oauth2.scopemapping, [scope_name, "offline_access"]]
+        - !Find [authentik_providers_oauth2.scopemapping, [scope_name, "app_admin"]]
     state: present
 
   # 3. Application
